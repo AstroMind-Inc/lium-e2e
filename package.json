@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "cli": "tsx ui/cli/index.ts",
     "test:unit": "jest --coverage",
     "test:unit:watch": "jest --watch",
     "test:framework": "npm run test:unit",
@@ -12,7 +13,13 @@
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "prepare": "husky install"
   },
-  "keywords": ["e2e", "testing", "playwright", "k6", "lium"],
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright",
+    "k6",
+    "lium"
+  ],
   "author": "Lium Engineering",
   "license": "UNLICENSED",
   "dependencies": {
@@ -42,6 +49,7 @@
     "prettier": "^3.2.4",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.3"
   },
   "engines": {
