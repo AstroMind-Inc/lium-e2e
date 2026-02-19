@@ -1,0 +1,60 @@
+/**
+ * Playwright Configuration for Integration Tests
+ * API testing configuration
+ */
+
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+
+  // Run tests in files in parallel
+  fullyParallel: true,
+
+  // Fail the build on CI if you accidentally left test.only in the source code
+  forbidOnly: !!process.env.CI,
+
+  // Retry on CI only
+  retries: process.env.CI ? 2 : 0,
+
+  // Opt out of parallel tests on CI
+  workers: process.env.CI ? 1 : undefined,
+
+  // Reporter configuration
+  reporter: [
+    ['html', { outputFolder: '../reports/playwright-api-report', open: 'never' }],
+    ['list'],
+    ['junit', { outputFile: '../reports/junit-api-results.xml' }],
+  ],
+
+  // Shared settings for all the projects below
+  use: {
+    // Base URL for API requests
+    baseURL: process.env.BASE_API_URL || 'http://localhost:4000',
+
+    // Extra HTTP headers
+    extraHTTPHeaders: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+
+    // Default timeout for API requests
+    timeout: 30000,
+  },
+
+  // Configure projects (no browser needed for API tests)
+  projects: [
+    {
+      name: 'api',
+      use: {},
+    },
+  ],
+
+  // Global timeout for each test
+  timeout: 60000,
+
+  // Expect timeout
+  expect: {
+    timeout: 10000,
+  },
+});
