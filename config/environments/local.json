@@ -1,0 +1,19 @@
+{
+  "name": "local",
+  "baseUrls": {
+    "web": "http://localhost:3000",
+    "api": "http://localhost:4000",
+    "services": {
+      "example-service": "http://localhost:5000"
+    }
+  },
+  "auth0": {
+    "domain": "localhost",
+    "clientId": "local-test-client",
+    "audience": "http://localhost:4000"
+  },
+  "timeouts": {
+    "api": 30000,
+    "pageLoad": 60000
+  }
+}

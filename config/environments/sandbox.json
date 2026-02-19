@@ -1,0 +1,20 @@
+{
+  "name": "sandbox",
+  "baseUrls": {
+    "web": "https://sandbox.lium.app",
+    "api": "https://api-sandbox.lium.app",
+    "services": {
+      "service1": "https://service1-sandbox.lium.app",
+      "service2": "https://service2-sandbox.lium.app"
+    }
+  },
+  "auth0": {
+    "domain": "lium-sandbox.us.auth0.com",
+    "clientId": "REPLACE_WITH_SANDBOX_CLIENT_ID",
+    "audience": "https://api-sandbox.lium.app"
+  },
+  "timeouts": {
+    "api": 30000,
+    "pageLoad": 60000
+  }
+}

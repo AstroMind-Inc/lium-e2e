@@ -1,0 +1,20 @@
+{
+  "name": "staging",
+  "baseUrls": {
+    "web": "https://staging.lium.app",
+    "api": "https://api-staging.lium.app",
+    "services": {
+      "service1": "https://service1-staging.lium.app",
+      "service2": "https://service2-staging.lium.app"
+    }
+  },
+  "auth0": {
+    "domain": "lium-staging.us.auth0.com",
+    "clientId": "REPLACE_WITH_STAGING_CLIENT_ID",
+    "audience": "https://api-staging.lium.app"
+  },
+  "timeouts": {
+    "api": 30000,
+    "pageLoad": 60000
+  }
+}
