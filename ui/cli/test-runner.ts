@@ -156,7 +156,6 @@ export class TestRunner {
       const proc = spawn(command, args, {
         env,
         stdio: 'inherit', // Stream output directly to console
-        shell: true,
       });
 
       proc.on('close', (code) => {

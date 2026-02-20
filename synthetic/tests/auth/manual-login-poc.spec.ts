@@ -10,7 +10,7 @@
  * Run with: npx playwright test synthetic/tests/auth/manual-login-poc.spec.ts --headed
  */
 
-import { test, expect } from '../fixtures/index.js';
+import { test, expect } from '../../fixtures/index.js';
 
 test.describe('Manual Login POC', () => {
   test.setTimeout(300000); // 5 minutes for manual interaction
