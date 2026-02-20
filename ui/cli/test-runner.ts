@@ -76,9 +76,18 @@ export class TestRunner {
       `${options.pillar}/`,
     ];
 
+    // Synthetic tests should show the browser by default
+    const shouldRunHeaded = options.headed ||
+      options.pillar === 'synthetic' ||
+      (options.grep && (
+        options.grep.toLowerCase().includes('manual') ||
+        options.grep.toLowerCase().includes('poc')
+      ));
+
     // Add options
-    if (options.headed) {
+    if (shouldRunHeaded) {
       args.push('--headed');
+      console.log(chalk.yellow('📺 Running in headed mode (browser visible)\n'));
     }
 
     if (options.debug) {
