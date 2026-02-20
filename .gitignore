@@ -18,6 +18,8 @@ results/*.json
 test-results/
 playwright-report/
 playwright/.cache/
+playwright/.auth/*.json
+!playwright/.auth/.gitkeep
 .playwright/
 
 # Node
