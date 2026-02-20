@@ -4,9 +4,18 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Check if saved auth exists
+const adminAuthPath = './playwright/.auth/admin.json';
+const hasAdminAuth = fs.existsSync(adminAuthPath);
 
 export default defineConfig({
   testDir: './tests',
+
+  // Ignore example and future tests
+  testIgnore: ['**/_examples/**', '**/_future/**', '**/user-flows/multi-user-flow.spec.ts'],
 
   // Run tests in files in parallel
   fullyParallel: true,
@@ -22,15 +31,18 @@ export default defineConfig({
 
   // Reporter configuration
   reporter: [
-    ['html', { outputFolder: '../reports/playwright-report', open: 'never' }],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
-    ['junit', { outputFile: '../reports/junit-results.xml' }],
+    ['junit', { outputFile: 'reports/junit-results.xml' }],
   ],
 
   // Shared settings for all the projects below
   use: {
     // Base URL for page.goto('/')
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
+
+    // Use saved admin auth by default if it exists
+    ...(hasAdminAuth && { storageState: adminAuthPath }),
 
     // Collect trace when retrying the failed test
     trace: 'retain-on-failure',
@@ -50,9 +62,30 @@ export default defineConfig({
 
   // Configure projects for major browsers
   projects: [
+    // Regular tests (no saved auth)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+
+    // Admin tests (with saved admin auth)
+    {
+      name: 'chromium-admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './playwright/.auth/admin.json',
+      },
+      testMatch: /.*admin.*.spec.ts/,
+    },
+
+    // User tests (with saved user auth)
+    {
+      name: 'chromium-user',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './playwright/.auth/user.json',
+      },
+      testMatch: /.*user.*.spec.ts/,
     },
 
     {
@@ -85,5 +118,5 @@ export default defineConfig({
   },
 
   // Output folder for test artifacts
-  outputDir: '../test-results',
+  outputDir: 'test-results',
 });
