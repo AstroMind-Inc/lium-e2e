@@ -53,14 +53,21 @@ export class EnvironmentSelector {
    */
   async getAvailableEnvironments(): Promise<Environment[]> {
     const { readdir } = await import('fs/promises');
+    const preferredOrder: Environment[] = ['local', 'dev', 'sandbox', 'staging'];
+
     try {
       const files = await readdir(this.configDir);
-      return files
+      const available = files
         .filter(f => f.endsWith('.json'))
         .map(f => f.replace('.json', '') as Environment)
-        .filter(e => ['local', 'dev', 'sandbox', 'staging'].includes(e));
+        .filter(e => preferredOrder.includes(e));
+
+      // Sort by preferred order
+      return available.sort((a, b) =>
+        preferredOrder.indexOf(a) - preferredOrder.indexOf(b)
+      );
     } catch {
-      return ['local', 'dev', 'sandbox', 'staging'];
+      return preferredOrder;
     }
   }
 
