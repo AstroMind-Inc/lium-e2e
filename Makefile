@@ -183,16 +183,10 @@ test-api-tools: .check-auth
 	@echo "🔧 Running tool API tests..."
 	@npx playwright test integration/tests/tools/
 
-# Run multi-user flow test (admin + regular user)
+# Run multi-user flow test (admin + regular user) - HEADLESS
 test-multi-user: .check-auth
-	@echo "👥 Running multi-user flow test..."
-	@echo ""
-	@echo "This test will prompt you to:"
-	@echo "  1. Sign in with @astromind.com account (admin)"
-	@echo "  2. Sign out"
-	@echo "  3. Sign in with non-@astromind.com account (user)"
-	@echo ""
-	@E2E_ENVIRONMENT=local npx playwright test synthetic/tests/user-flows/multi-user-flow.spec.ts --headed --workers=1
+	@echo "👥 Running multi-user flow test (headless)..."
+	@npx playwright test synthetic/tests/user-flows/multi-user-flow-headless.spec.ts
 
 # Run specific test pillars
 test-synthetic: .check-auth
