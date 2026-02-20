@@ -22,10 +22,34 @@ test.describe('Manual Login POC', () => {
     const baseUrl = envConfig.baseUrls.web;
 
     console.log(`\n1. Opening browser to: ${baseUrl}`);
+
+    // Show alert in browser telling user to log in
     await page.goto(baseUrl);
 
-    console.log('2. Please log in using your OAuth credentials in the browser...');
-    console.log('3. Test will wait for you to reach the dashboard...\n');
+    // Inject a visible banner telling user to log in
+    await page.evaluate(() => {
+      const banner = document.createElement('div');
+      banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #ff6b00;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        z-index: 999999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      `;
+      banner.textContent = '🔐 TEST WAITING: Please log in now...';
+      document.body.prepend(banner);
+    });
+
+    console.log('\n⚠️  WAITING FOR YOU TO LOG IN...');
+    console.log('2. Please log in using your OAuth credentials in the browser');
+    console.log('3. Test will wait up to 5 minutes for you to reach dashboard\n');
 
     // Wait for user to complete login and reach dashboard
     // This will wait up to 5 minutes (test timeout)
