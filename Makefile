@@ -1,4 +1,4 @@
-.PHONY: help setup up down test test-synthetic test-integration test-performance clean credentials results install test-framework configure
+.PHONY: help setup up down test test-synthetic test-integration test-performance test-smoke clean credentials results install test-framework configure
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -16,6 +16,7 @@ help:
 	@echo "Testing:"
 	@echo "  make test           - Interactive test runner (prompts for pillar/env)"
 	@echo "  make up             - Alias for 'make test'"
+	@echo "  make test-smoke     - Run smoke tests (quick health checks)"
 	@echo "  make test-synthetic - Run synthetic tests (will prompt for environment)"
 	@echo "  make test-integration - Run integration tests"
 	@echo "  make test-performance - Run performance tests"
@@ -77,6 +78,11 @@ test:
 
 # Alias for intuitive 'up' command
 up: test
+
+# Run smoke tests (quick health checks)
+test-smoke:
+	@echo "🔍 Running smoke tests..."
+	@E2E_ENVIRONMENT=$${E2E_ENVIRONMENT:-dev} npx playwright test synthetic/tests/smoke/
 
 # Run specific test pillars
 test-synthetic:
