@@ -52,11 +52,11 @@ async function readEnvFile(path: string): Promise<Auth0Config | null> {
         const [, key, value] = match;
         const cleanValue = value.replace(/^["']|["']$/g, ''); // Remove quotes
 
-        if (key === 'NEXT_PUBLIC_AUTH0_DOMAIN') {
+        if (key === 'AUTH0_DOMAIN') {
           config.domain = cleanValue;
-        } else if (key === 'NEXT_PUBLIC_AUTH0_CLIENT_ID') {
+        } else if (key === 'AUTH0_CLIENT_ID') {
           config.clientId = cleanValue;
-        } else if (key === 'NEXT_PUBLIC_AUTH0_AUDIENCE') {
+        } else if (key === 'AUTH0_AUDIENCE') {
           config.audience = cleanValue;
         }
       }
@@ -120,9 +120,9 @@ async function main() {
   if (!auth0Config) {
     console.error('\n❌ Could not find Auth0 configuration in .env.local');
     console.error('Expected variables:');
-    console.error('  - NEXT_PUBLIC_AUTH0_DOMAIN');
-    console.error('  - NEXT_PUBLIC_AUTH0_CLIENT_ID');
-    console.error('  - NEXT_PUBLIC_AUTH0_AUDIENCE\n');
+    console.error('  - AUTH0_DOMAIN');
+    console.error('  - AUTH0_CLIENT_ID');
+    console.error('  - AUTH0_AUDIENCE\n');
     rl.close();
     process.exit(1);
   }

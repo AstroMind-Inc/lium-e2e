@@ -33,9 +33,9 @@ This will:
 1. Ask where your `lium` repo is located
 2. Read `lium/apps/web/.env.local`
 3. Extract Auth0 settings:
-   - `NEXT_PUBLIC_AUTH0_DOMAIN`
-   - `NEXT_PUBLIC_AUTH0_CLIENT_ID`
-   - `NEXT_PUBLIC_AUTH0_AUDIENCE`
+   - `AUTH0_DOMAIN`
+   - `AUTH0_CLIENT_ID`
+   - `AUTH0_AUDIENCE`
 4. Update all environment configs automatically
 
 **What gets configured:**
