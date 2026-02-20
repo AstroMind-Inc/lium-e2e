@@ -10,17 +10,16 @@
  * Run with: npx playwright test synthetic/tests/auth/manual-login-poc.spec.ts --headed
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/index.js';
 
 test.describe('Manual Login POC', () => {
   test.setTimeout(300000); // 5 minutes for manual interaction
 
-  test('manual OAuth login - wait for user to sign in', async ({ page }) => {
+  test('manual OAuth login - wait for user to sign in', async ({ page, envConfig }) => {
     console.log('\n🔐 Manual Login POC Started');
     console.log('================================');
 
-    // Get environment URL (or default to dev)
-    const baseUrl = process.env.WEB_BASE_URL || 'https://dev.lium.app';
+    const baseUrl = envConfig.baseUrls.web;
 
     console.log(`\n1. Opening browser to: ${baseUrl}`);
     await page.goto(baseUrl);
@@ -54,11 +53,11 @@ test.describe('Manual Login POC', () => {
     }
   });
 
-  test('manual OAuth login with session check', async ({ page, context }) => {
+  test('manual OAuth login with session check', async ({ page, context, envConfig }) => {
     console.log('\n🔐 Manual Login POC with Session Check');
     console.log('=========================================');
 
-    const baseUrl = process.env.WEB_BASE_URL || 'https://dev.lium.app';
+    const baseUrl = envConfig.baseUrls.web;
 
     // Step 1: Login
     console.log(`\n1. Opening browser to: ${baseUrl}`);
@@ -98,11 +97,11 @@ test.describe('Manual Login POC', () => {
     await page.waitForTimeout(10000);
   });
 
-  test('manual OAuth login - capture tokens', async ({ page }) => {
+  test('manual OAuth login - capture tokens', async ({ page, envConfig }) => {
     console.log('\n🔐 Manual Login POC - Token Capture');
     console.log('=====================================');
 
-    const baseUrl = process.env.WEB_BASE_URL || 'https://dev.lium.app';
+    const baseUrl = envConfig.baseUrls.web;
 
     // Listen for Auth0 token requests
     page.on('response', async (response) => {
