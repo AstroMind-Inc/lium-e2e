@@ -1,220 +1,218 @@
-# Lium E2E Testing Framework - Setup Guide
+# Setup Guide
 
-This guide walks you through setting up the framework with **real** configuration values.
+Quick setup guide for the Lium E2E Testing Framework.
 
 ## Prerequisites
 
-1. **Node.js >= 18.0.0** and **npm >= 9.0.0**
-2. **k6** for performance tests: https://k6.io/docs/get-started/installation/
-   - macOS: `brew install k6`
-   - Linux: See installation guide
-3. **lium repository** with `.env.local` configured
-4. **VPN access** (for API testing against dev/staging/sandbox)
+- **Node.js >= 18.0.0** and **npm >= 9.0.0**
+- **Docker** running (for local testing)
+- **Auth0 account** with @astromind.com or access to Lium app
 
-## Step 1: Install Dependencies
+## One-Command Setup
 
 ```bash
-make install
+make setup
 ```
 
-This installs:
-- Node modules
-- Playwright browsers (chromium, firefox, webkit)
+This will:
+1. Install Node dependencies
+2. Install Playwright browsers
+3. Create necessary directories
+4. **Prompt you to authenticate** (opens browser for OAuth)
 
-## Step 2: Configure Auth0
+That's it! You're ready to test.
 
-The framework needs Auth0 configuration from your `lium` repository.
+## Manual Setup (Step by Step)
+
+If you prefer step-by-step setup:
+
+### 1. Install Dependencies
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+### 2. Authenticate
+
+```bash
+make auth-setup-admin
+```
+
+- Opens browser to `http://lium-web:3000` (or configured URL)
+- You log in via OAuth (Google)
+- Session saved to `playwright/.auth/admin.json` (gitignored)
+- All future tests use this saved session automatically
+
+### 3. Verify It Works
+
+```bash
+make test-basic
+```
+
+Should show 8 tests passing in ~7 seconds. All tests run **headless** using your saved auth!
+
+### 4. View Results
+
+```bash
+make report
+```
+
+Opens interactive HTML report with pass/fail status, screenshots, and timeline.
+
+## Environment Configuration
+
+Auth0 configuration needs to be copied from your `lium-web` repo:
 
 ```bash
 make configure
 ```
 
-This will:
-1. Ask where your `lium` repo is located
-2. Read `lium/apps/web/.env.local`
-3. Extract Auth0 settings:
-   - `AUTH0_DOMAIN`
-   - `AUTH0_CLIENT_ID`
-   - `AUTH0_AUDIENCE`
-4. Update all environment configs automatically
+This reads `lium/apps/web/.env.local` and updates all environment configs automatically.
 
-**What gets configured:**
-- `config/environments/local.json` - Local Docker environment
-- `config/environments/dev.json` - Dev environment
-- `config/environments/sandbox.json` - Sandbox environment
-- `config/environments/staging.json` - Staging environment
+**Already configured:**
+- `local.json` - Docker services (http://lium-web:3000)
+- `dev.json` - Dev environment (https://app.dev.lium.ai)
+- `sandbox.json` - Sandbox (https://app.sandbox.lium.ai)
+- `staging.json` - Staging (https://app.staging.lium.ai)
 
-## Step 3: Environment URLs (Already Configured)
+## Testing Different Environments
 
-The environment configs are already set with correct URLs:
-
-**Local:**
-- Web: `http://lium-web:3000` (Docker service)
-- API: `http://lium-api:8000` (Docker service)
-
-**Dev:**
-- Web: `https://app.dev.lium.ai`
-- API: VPN Required
-
-**Sandbox:**
-- Web: `https://app.sandbox.lium.ai`
-- API: VPN Required
-
-**Staging:**
-- Web: `https://app.staging.lium.ai`
-- API: VPN Required
-
-## Step 4: Setup Credentials
+### Local (Default)
 
 ```bash
-make credentials
+make test-basic          # Uses local environment by default
 ```
 
-This will prompt you for:
-- Username (your email)
-- Password
-- Optional: Elevated/admin credentials
+**Requirements:**
+- Docker running with `lium-web` and `lium-api` containers
+- Accessible at `http://lium-web:3000` and `http://lium-api:8000`
 
-Credentials are stored locally in `./credentials/{environment}.json` and are **never committed** to git.
-
-## Step 5: Verify Setup
-
-Run a simple test to verify everything works:
+### Other Environments
 
 ```bash
-# Try the manual login POC (browser will open)
-npx playwright test synthetic/tests/auth/manual-login-poc.spec.ts --headed
+make test                # Interactive - select environment
+# Or:
+E2E_ENVIRONMENT=dev make test-basic
 ```
 
-You should see:
-1. Browser opens to your environment
-2. You can manually log in
-3. Test verifies you reached the dashboard
-
-## Testing Against Different Environments
-
-### Local Testing
-
-Requirements:
-- Docker containers running (`lium-web` and `lium-api` services)
-- Network connectivity to `http://lium-web:3000`
-
-```bash
-make test
-# Select: Synthetic
-# Select: local
-```
-
-### Dev/Sandbox/Staging Testing
-
-Requirements:
-- **VPN connected** (APIs are not publicly exposed)
-- Credentials set up for the environment
+**Requirements for dev/sandbox/staging:**
+- VPN connected (APIs not public)
+- Authenticated for that environment
 - Network access to `app.{env}.lium.ai`
 
+## Authentication Management
+
+### Check Auth Status
+
 ```bash
-make test
-# Select: Synthetic (browser tests work without VPN)
-# Select: dev (or sandbox/staging)
+make auth-status
 ```
 
-**Note:** Integration tests (API tests) require VPN connection since APIs are not publicly exposed.
+Shows which sessions are saved and when they were last updated.
 
-## Important Limitations
+### Re-authenticate
 
-### API Testing Requires VPN
+```bash
+make auth-clear          # Clear saved sessions
+make auth-setup-admin    # Log in again
+```
 
-All non-local API endpoints require VPN:
-- `dev` - VPN required
-- `sandbox` - VPN required
-- `staging` - VPN required
+### Multiple Users
 
-**Without VPN:**
-- ✅ Synthetic tests (browser) work fine
-- ❌ Integration tests (API) will fail
-- ❌ Performance tests (k6) will fail
+```bash
+make auth-setup-admin    # Admin (@astromind.com)
+make auth-setup-user     # Regular user (non-@astromind.com)
+```
 
-**With VPN:**
-- ✅ All test types work
+Tests will use admin auth by default. Use `make test-multi-user` for tests that need both.
 
-### Local Testing Requirements
+## File Structure After Setup
 
-For local testing:
-- Docker must be running
-- `lium-web` and `lium-api` containers must be accessible
-- Tests run from host machine connecting to Docker services
+```
+lium-e2e/
+├── node_modules/          # Dependencies (installed)
+├── playwright/.auth/      # Saved sessions (gitignored)
+│   └── admin.json         # Your saved auth session
+├── playwright-report/     # HTML reports (after running tests)
+├── test-results/          # Test artifacts
+└── config/environments/   # Environment configs
+    ├── local.json         # ✅ Ready
+    ├── dev.json           # ⚠️  Needs auth0 config
+    ├── sandbox.json       # ⚠️  Needs auth0 config
+    └── staging.json       # ⚠️  Needs auth0 config
+```
 
 ## Troubleshooting
 
-### "Auth0 configuration not found"
+### "No auth session found"
 
-Run `make configure` and provide the correct path to `lium` repository.
+```bash
+make auth-setup-admin
+```
 
-### "No credentials found"
+Make sure you complete the login in the browser window.
 
-Run `make credentials` to set up credentials for the environment.
+### Browser doesn't open
 
-### "Connection refused" on local tests
+```bash
+npx playwright install chromium
+```
 
-Ensure Docker containers are running:
+### "Connection refused" (local tests)
+
+Check Docker containers are running:
 ```bash
 docker ps | grep lium
 ```
 
-You should see `lium-web` and `lium-api` containers.
+Should see `lium-web` and `lium-api`.
 
-### API tests failing on dev/sandbox/staging
+### Tests fail with 401/403 errors
 
-Ensure you're connected to VPN. API endpoints are not publicly accessible.
+Session expired. Re-authenticate:
+```bash
+make auth-clear
+make auth-setup-admin
+```
 
-### k6 not found
+### "No report found"
 
-Install k6:
-- macOS: `brew install k6`
-- Linux: https://k6.io/docs/get-started/installation/
+Run tests first:
+```bash
+make test-basic
+make report
+```
+
+### VPN Issues (dev/sandbox/staging)
+
+- Synthetic tests (browser) work without VPN
+- API tests **require VPN** for dev/sandbox/staging
+
+## Quick Start Commands
+
+```bash
+# Initial setup
+make setup                  # One-time setup + auth
+
+# Run tests
+make test-basic            # Quick smoke tests (7s)
+make test-auth             # Auth verification
+make test                  # Interactive (pick module)
+
+# View results
+make report                # HTML report
+
+# Manage auth
+make auth-status           # Check saved sessions
+make auth-clear            # Clear and re-auth
+```
 
 ## Next Steps
 
-Once setup is complete:
+1. ✅ Run `make test-basic` to verify setup
+2. ✅ Run `make report` to see the HTML report
+3. ✅ Write tests in `synthetic/tests/chats/` (or other modules)
+4. ✅ Run `make test` and select your module
 
-```bash
-# Interactive test runner
-make test
-
-# Run specific test types
-make test-synthetic      # Browser tests
-make test-integration    # API tests (requires VPN for non-local)
-make test-performance    # Load tests (requires VPN for non-local)
-
-# View results
-make results
-
-# Run internal framework tests
-make test-framework
-```
-
-## Quick Reference
-
-```bash
-make configure          # Configure Auth0 from lium
-make credentials        # Setup credentials
-make test               # Interactive test runner
-make test-synthetic     # Run browser tests
-make results            # View test results
-```
-
-## File Locations
-
-- **Environment configs:** `config/environments/*.json`
-- **Credentials:** `credentials/*.json` (gitignored)
-- **Test results:** `results/*.jsonl` (gitignored)
-- **Auth0 source:** `../lium/apps/web/.env.local`
-
-## Support
-
-If you encounter issues:
-1. Check this setup guide
-2. Verify Docker containers are running (for local)
-3. Verify VPN connection (for remote environments)
-4. Check credentials are set: `ls -la credentials/`
-5. Contact Lium Engineering team
+See README.md for full documentation.
