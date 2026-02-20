@@ -113,6 +113,55 @@ export class CLIPrompts {
   }
 
   /**
+   * Prompt for integration test module selection
+   */
+  async promptForIntegrationModule(): Promise<string | null> {
+    const { module } = await inquirer.prompt<{ module: string }>([
+      {
+        type: 'list',
+        name: 'module',
+        message: 'Select API module:',
+        choices: [
+          {
+            name: '🎯 All APIs (complete test suite)',
+            value: 'all',
+          },
+          {
+            name: '━'.repeat(40),
+            disabled: true,
+          },
+          {
+            name: '🔍 Health - API health checks',
+            value: 'health',
+          },
+          {
+            name: '👥 Users - User API endpoints',
+            value: 'users',
+          },
+          {
+            name: '🏢 Tenants - Tenant API endpoints',
+            value: 'tenants',
+          },
+          {
+            name: '💬 Chats - Chat API endpoints',
+            value: 'chats',
+          },
+          {
+            name: '🤖 Agents - Agent API endpoints',
+            value: 'agents',
+          },
+          {
+            name: '🔧 Tools - Tool API endpoints',
+            value: 'tools',
+          },
+        ],
+      },
+    ]);
+
+    return module === 'all' ? null : module;
+  }
+
+  /**
    * Prompt for credentials setup
    */
   async promptForCredentials(environment: Environment): Promise<{

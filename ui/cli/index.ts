@@ -180,10 +180,12 @@ class LiumCLI {
   private async runTestsInteractive(): Promise<void> {
     const pillar = await cliPrompts.promptForPillar();
 
-    // For synthetic tests, ask which module to test
+    // For synthetic and integration tests, ask which module to test
     let module: string | null = null;
     if (pillar === 'synthetic') {
       module = await cliPrompts.promptForModule();
+    } else if (pillar === 'integration') {
+      module = await cliPrompts.promptForIntegrationModule();
     }
 
     const environment = await cliPrompts.promptForEnvironment();
