@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "cli": "tsx ui/cli/index.ts",
+    "configure": "tsx scripts/configure-auth0.ts",
     "test:unit": "jest --coverage",
     "test:unit:watch": "jest --watch",
     "test:framework": "npm run test:unit",

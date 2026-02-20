@@ -1,20 +1,18 @@
 {
   "name": "sandbox",
   "baseUrls": {
-    "web": "https://sandbox.lium.app",
-    "api": "https://api-sandbox.lium.app",
-    "services": {
-      "service1": "https://service1-sandbox.lium.app",
-      "service2": "https://service2-sandbox.lium.app"
-    }
+    "web": "https://app.sandbox.lium.ai",
+    "api": "VPN_REQUIRED",
+    "services": {}
   },
   "auth0": {
-    "domain": "lium-sandbox.us.auth0.com",
-    "clientId": "REPLACE_WITH_SANDBOX_CLIENT_ID",
-    "audience": "https://api-sandbox.lium.app"
+    "domain": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL",
+    "clientId": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL",
+    "audience": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL"
   },
   "timeouts": {
     "api": 30000,
     "pageLoad": 60000
-  }
+  },
+  "notes": "API is not publicly exposed - requires VPN connection for API testing. Auth0 config must be copied from lium-web/apps/web/.env.local"
 }

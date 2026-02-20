@@ -1,4 +1,4 @@
-.PHONY: help setup up down test test-synthetic test-integration test-performance clean credentials results install test-framework
+.PHONY: help setup up down test test-synthetic test-integration test-performance clean credentials results install test-framework configure
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -10,6 +10,7 @@ help:
 	@echo ""
 	@echo "Setup:"
 	@echo "  make setup          - Initial setup (install deps, create dirs, setup creds)"
+	@echo "  make configure      - Configure Auth0 from lium-web/.env.local"
 	@echo "  make install        - Install/update dependencies only"
 	@echo ""
 	@echo "Testing:"
@@ -95,6 +96,12 @@ test-framework:
 	@echo "🧪 Testing the testing framework..."
 	@npm run test:unit
 	@echo "✅ Framework tests passed"
+
+# Configure Auth0 from lium-web
+configure:
+	@echo "🔧 Auth0 Configuration"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@npm run configure
 
 # Setup credentials
 credentials:

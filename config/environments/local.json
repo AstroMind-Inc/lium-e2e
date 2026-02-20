@@ -1,19 +1,18 @@
 {
   "name": "local",
   "baseUrls": {
-    "web": "http://localhost:3000",
-    "api": "http://localhost:4000",
-    "services": {
-      "example-service": "http://localhost:5000"
-    }
+    "web": "http://lium-web:3000",
+    "api": "http://lium-api:8000",
+    "services": {}
   },
   "auth0": {
-    "domain": "localhost",
-    "clientId": "local-test-client",
-    "audience": "http://localhost:4000"
+    "domain": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL",
+    "clientId": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL",
+    "audience": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL"
   },
   "timeouts": {
     "api": 30000,
     "pageLoad": 60000
-  }
+  },
+  "notes": "Auth0 config must be copied from lium-web/apps/web/.env.local"
 }
