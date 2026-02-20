@@ -4,8 +4,16 @@
  */
 
 import { test, expect } from '../../fixtures/index.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test.describe('Auth POC', () => {
+  // Use saved admin session
+  test.use({
+    storageState: path.resolve(__dirname, '../../../playwright/.auth/admin.json'),
+  });
   test('can access app with saved auth', async ({ page, envConfig }) => {
     // Navigate to app - should be authenticated via saved state
     await page.goto(envConfig.baseUrls.web);

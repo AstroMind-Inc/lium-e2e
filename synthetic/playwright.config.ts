@@ -6,9 +6,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Check if saved auth exists
-const adminAuthPath = './playwright/.auth/admin.json';
+const adminAuthPath = path.resolve(__dirname, '../playwright/.auth/admin.json');
 const hasAdminAuth = fs.existsSync(adminAuthPath);
 
 export default defineConfig({
