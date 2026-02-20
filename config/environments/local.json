@@ -6,9 +6,9 @@
     "services": {}
   },
   "auth0": {
-    "domain": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL",
-    "clientId": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL",
-    "audience": "CONFIGURE_FROM_LIUM_WEB_ENV_LOCAL"
+    "domain": "dev-lium.us.auth0.com",
+    "clientId": "aCQsj6hwoErCtY7jho7GOLnQqzM94nv1",
+    "audience": "https://api.sandbox.lium.ai"
   },
   "timeouts": {
     "api": 30000,
