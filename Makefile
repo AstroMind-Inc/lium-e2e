@@ -1,4 +1,4 @@
-.PHONY: help setup up down test test-synthetic test-integration test-performance test-basic test-auth test-chats test-storage test-agents test-tools test-tenants test-multi-user clean credentials results report install test-framework configure auth-setup-admin auth-setup-user auth-setup-all auth-status auth-clear .check-auth
+.PHONY: help setup up down test test-synthetic test-integration test-performance test-basic test-auth test-chats test-storage test-agents test-tools test-tenants test-multi-user test-api-health test-api-users test-api-tenants test-api-chats test-api-agents test-api-tools clean credentials results report install test-framework configure auth-setup-admin auth-setup-user auth-setup-all auth-status auth-clear .check-auth
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -24,7 +24,7 @@ help:
 	@echo "  make test           - Interactive test runner (prompts for pillar/env)"
 	@echo "  make up             - Alias for 'make test'"
 	@echo ""
-	@echo "Test Modules (fast, focused tests):"
+	@echo "Synthetic Test Modules (fast, focused browser tests):"
 	@echo "  make test-basic     - Basic health checks & smoke tests"
 	@echo "  make test-auth      - Authentication & session tests"
 	@echo "  make test-chats     - Chat functionality tests"
@@ -33,9 +33,17 @@ help:
 	@echo "  make test-tools     - Tool functionality tests"
 	@echo "  make test-tenants   - Multi-tenancy tests"
 	@echo ""
+	@echo "Integration Test Modules (fast, focused API tests):"
+	@echo "  make test-api-health   - API health checks"
+	@echo "  make test-api-users    - User API endpoints"
+	@echo "  make test-api-tenants  - Tenant API endpoints"
+	@echo "  make test-api-chats    - Chat API endpoints"
+	@echo "  make test-api-agents   - Agent API endpoints"
+	@echo "  make test-api-tools    - Tool API endpoints"
+	@echo ""
 	@echo "Full Test Suites:"
 	@echo "  make test-synthetic - Run ALL synthetic tests"
-	@echo "  make test-integration - Run integration tests"
+	@echo "  make test-integration - Run ALL integration tests"
 	@echo "  make test-performance - Run performance tests"
 	@echo "  make test-framework - Run internal unit tests"
 	@echo ""
@@ -149,6 +157,31 @@ test-tools: .check-auth
 test-tenants: .check-auth
 	@echo "🏢 Running tenant tests..."
 	@npx playwright test synthetic/tests/tenants/
+
+# Run integration module-specific tests
+test-api-health: .check-auth
+	@echo "🔍 Running API health checks..."
+	@npx playwright test integration/tests/health/
+
+test-api-users: .check-auth
+	@echo "👥 Running user API tests..."
+	@npx playwright test integration/tests/users/
+
+test-api-tenants: .check-auth
+	@echo "🏢 Running tenant API tests..."
+	@npx playwright test integration/tests/tenants/
+
+test-api-chats: .check-auth
+	@echo "💬 Running chat API tests..."
+	@npx playwright test integration/tests/chats/
+
+test-api-agents: .check-auth
+	@echo "🤖 Running agent API tests..."
+	@npx playwright test integration/tests/agents/
+
+test-api-tools: .check-auth
+	@echo "🔧 Running tool API tests..."
+	@npx playwright test integration/tests/tools/
 
 # Run multi-user flow test (admin + regular user)
 test-multi-user: .check-auth
