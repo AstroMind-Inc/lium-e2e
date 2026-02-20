@@ -8,7 +8,7 @@ This guide walks you through setting up the framework with **real** configuratio
 2. **k6** for performance tests: https://k6.io/docs/get-started/installation/
    - macOS: `brew install k6`
    - Linux: See installation guide
-3. **lium-web repository** with `.env.local` configured
+3. **lium repository** with `.env.local` configured
 4. **VPN access** (for API testing against dev/staging/sandbox)
 
 ## Step 1: Install Dependencies
@@ -23,15 +23,15 @@ This installs:
 
 ## Step 2: Configure Auth0
 
-The framework needs Auth0 configuration from your `lium-web` repository.
+The framework needs Auth0 configuration from your `lium` repository.
 
 ```bash
 make configure
 ```
 
 This will:
-1. Ask where your `lium-web` repo is located
-2. Read `lium-web/apps/web/.env.local`
+1. Ask where your `lium` repo is located
+2. Read `lium/apps/web/.env.local`
 3. Extract Auth0 settings:
    - `NEXT_PUBLIC_AUTH0_DOMAIN`
    - `NEXT_PUBLIC_AUTH0_CLIENT_ID`
@@ -148,7 +148,7 @@ For local testing:
 
 ### "Auth0 configuration not found"
 
-Run `make configure` and provide the correct path to `lium-web` repository.
+Run `make configure` and provide the correct path to `lium` repository.
 
 ### "No credentials found"
 
@@ -196,7 +196,7 @@ make test-framework
 ## Quick Reference
 
 ```bash
-make configure          # Configure Auth0 from lium-web
+make configure          # Configure Auth0 from lium
 make credentials        # Setup credentials
 make test               # Interactive test runner
 make test-synthetic     # Run browser tests
@@ -208,7 +208,7 @@ make results            # View test results
 - **Environment configs:** `config/environments/*.json`
 - **Credentials:** `credentials/*.json` (gitignored)
 - **Test results:** `results/*.jsonl` (gitignored)
-- **Auth0 source:** `../lium-web/apps/web/.env.local`
+- **Auth0 source:** `../lium/apps/web/.env.local`
 
 ## Support
 

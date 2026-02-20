@@ -95,10 +95,10 @@ async function main() {
   console.log('\n🔐 Auth0 Configuration Tool');
   console.log('════════════════════════════════════════\n');
 
-  // Ask for lium-web location
-  const defaultPath = '../lium-web';
+  // Ask for lium location
+  const defaultPath = '../lium';
   const answer = await question(
-    `Where is your lium-web repository? (default: ${defaultPath}): `
+    `Where is your lium repository? (default: ${defaultPath}): `
   );
 
   const liumWebPath = answer.trim() || defaultPath;
@@ -107,7 +107,7 @@ async function main() {
   // Check if file exists
   if (!existsSync(envLocalPath)) {
     console.error(`\n❌ File not found: ${envLocalPath}`);
-    console.error('Please provide the correct path to lium-web repository.\n');
+    console.error('Please provide the correct path to lium repository.\n');
     rl.close();
     process.exit(1);
   }

@@ -14,5 +14,5 @@
     "api": 30000,
     "pageLoad": 60000
   },
-  "notes": "Auth0 config must be copied from lium-web/apps/web/.env.local"
+  "notes": "Auth0 config must be copied from lium/apps/web/.env.local"
 }
