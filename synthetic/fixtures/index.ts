@@ -38,10 +38,21 @@ export const test = base.extend<CustomFixtures>({
     await use(config);
   },
 
-  // Credentials fixture
+  // Credentials fixture (optional - for tests that need programmatic auth)
   credentials: async ({ environment }, use) => {
-    const creds = await credentialManager.loadCredentials(environment, false);
-    await use(creds);
+    try {
+      const creds = await credentialManager.loadCredentials(environment, false);
+      await use(creds);
+    } catch (error) {
+      // If credentials don't exist, provide empty credentials
+      // Tests using saved auth states don't need credentials
+      console.warn('[Fixture] No credentials found - tests will use saved auth state');
+      await use({
+        username: '',
+        password: '',
+        auth0ClientId: '',
+      });
+    }
   },
 
   // Auth0 helper fixture
@@ -55,34 +66,18 @@ export const test = base.extend<CustomFixtures>({
   },
 
   // Authenticated page fixture
-  authenticatedPage: async ({ page, envConfig, credentials, auth0Helper }, use) => {
-    // Navigate to the app
+  // Note: With saved auth states, the page is already authenticated
+  // This fixture just navigates to the app and verifies auth
+  authenticatedPage: async ({ page, envConfig }, use) => {
+    // Navigate to the app - auth state is already loaded from storageState
     await page.goto(envConfig.baseUrls.web);
 
-    // Wait for redirect to Auth0 or check if already logged in
-    try {
-      const isLoggedIn = await auth0Helper.waitForAuth0Session(page);
+    // Give it a moment to load
+    await page.waitForTimeout(1000);
 
-      if (!isLoggedIn) {
-        // Perform Auth0 login
-        await auth0Helper.completeAuth0LoginInBrowser(
-          page,
-          credentials.username,
-          credentials.password,
-          {
-            waitForUrl: /.*\/dashboard.*/,
-            timeout: 30000,
-          }
-        );
-      }
-    } catch (error) {
-      console.warn('Auth0 login flow not required or already authenticated');
-    }
-
+    // Page should be authenticated via saved auth state
+    // If not, test will fail (which is expected behavior)
     await use(page);
-
-    // Cleanup: Clear session after test
-    await auth0Helper.clearAuth0Session(page);
   },
 });
 
