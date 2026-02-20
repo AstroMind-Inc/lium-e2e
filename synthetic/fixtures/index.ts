@@ -33,6 +33,8 @@ export const test = base.extend<CustomFixtures>({
   // Environment config fixture
   envConfig: async ({ environment }, use) => {
     const config = await envSelector.loadEnvironment(environment);
+    console.log(`[Fixture] Using environment: ${environment}`);
+    console.log(`[Fixture] Web URL: ${config.baseUrls.web}`);
     await use(config);
   },
 

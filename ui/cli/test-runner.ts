@@ -95,6 +95,9 @@ export class TestRunner {
       E2E_ENVIRONMENT: options.environment,
     };
 
+    console.log(chalk.gray(`Environment: ${options.environment}`));
+    console.log(chalk.gray(`E2E_ENVIRONMENT set to: ${env.E2E_ENVIRONMENT}\n`));
+
     return await this.spawnProcess('npx', args, env);
   }
 
