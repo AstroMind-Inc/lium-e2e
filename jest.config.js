@@ -21,6 +21,9 @@ export default {
     '!shared/**/*.d.ts',
     '!shared/**/index.ts',
     '!**/*.test.ts',
+    // Exclude Playwright-specific browser automation (tested via E2E)
+    '!synthetic/auth-setup/**/*.ts',
+    '!shared/auth/auth0-helper.ts', // Browser automation - tested via E2E
   ],
   coverageThreshold: {
     global: {

@@ -63,6 +63,7 @@ export class Auth0Helper {
   /**
    * Complete Auth0 Universal Login flow in browser (for Playwright tests)
    * Handles the Auth0 login page specifically
+   * @istanbul ignore next - Browser automation tested via E2E tests
    */
   async completeAuth0LoginInBrowser(
     page: Page,
