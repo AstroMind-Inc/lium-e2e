@@ -69,7 +69,14 @@ test.describe('Authentication Flow', () => {
     page,
     authenticatedPage,
     envConfig,
+    environment,
   }) => {
+    // Skip automated auth tests on local (requires manual login)
+    if (environment === 'local') {
+      test.skip();
+      return;
+    }
+
     const dashboardPage = new DashboardPage(page, envConfig);
 
     // Navigate to dashboard (should already be authenticated)
@@ -89,7 +96,14 @@ test.describe('Authentication Flow', () => {
     page,
     authenticatedPage,
     envConfig,
+    environment,
   }) => {
+    // Skip automated auth tests on local (requires manual login)
+    if (environment === 'local') {
+      test.skip();
+      return;
+    }
+
     const dashboardPage = new DashboardPage(page, envConfig);
 
     // Navigate to dashboard
@@ -124,7 +138,14 @@ test.describe('Session Management', () => {
     page,
     authenticatedPage,
     envConfig,
+    environment,
   }) => {
+    // Skip automated auth tests on local (requires manual login)
+    if (environment === 'local') {
+      test.skip();
+      return;
+    }
+
     const dashboardPage = new DashboardPage(page, envConfig);
 
     // Navigate to dashboard
