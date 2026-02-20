@@ -60,6 +60,59 @@ export class CLIPrompts {
   }
 
   /**
+   * Prompt for test module selection (for synthetic tests)
+   */
+  async promptForModule(): Promise<string | null> {
+    const { module } = await inquirer.prompt<{ module: string }>([
+      {
+        type: 'list',
+        name: 'module',
+        message: 'Select test module:',
+        choices: [
+          {
+            name: '🎯 All Modules (complete test suite)',
+            value: 'all',
+          },
+          {
+            name: '━'.repeat(40),
+            disabled: true,
+          },
+          {
+            name: '🔍 Basic - Health checks & smoke tests',
+            value: 'basic',
+          },
+          {
+            name: '🔐 Auth - Authentication & sessions',
+            value: 'auth',
+          },
+          {
+            name: '💬 Chats - Chat functionality',
+            value: 'chats',
+          },
+          {
+            name: '📁 Storage - File storage & uploads',
+            value: 'storage',
+          },
+          {
+            name: '🤖 Agents - AI agent tests',
+            value: 'agents',
+          },
+          {
+            name: '🔧 Tools - Tool functionality',
+            value: 'tools',
+          },
+          {
+            name: '🏢 Tenants - Multi-tenancy',
+            value: 'tenants',
+          },
+        ],
+      },
+    ]);
+
+    return module === 'all' ? null : module;
+  }
+
+  /**
    * Prompt for credentials setup
    */
   async promptForCredentials(environment: Environment): Promise<{
@@ -197,9 +250,9 @@ export class CLIPrompts {
   /**
    * Prompt for main menu action
    */
-  async promptForMainAction(): Promise<'run' | 'credentials' | 'results' | 'exit'> {
+  async promptForMainAction(): Promise<'run' | 'results' | 'exit'> {
     const { action } = await inquirer.prompt<{
-      action: 'run' | 'credentials' | 'results' | 'exit';
+      action: 'run' | 'results' | 'exit';
     }>([
       {
         type: 'list',
@@ -209,10 +262,6 @@ export class CLIPrompts {
           {
             name: '▶️  Run Tests',
             value: 'run',
-          },
-          {
-            name: '🔐 Setup Credentials',
-            value: 'credentials',
           },
           {
             name: '📊 View Results',

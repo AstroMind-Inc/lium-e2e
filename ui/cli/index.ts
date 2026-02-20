@@ -104,12 +104,8 @@ class LiumCLI {
             await this.runTestsInteractive();
             break;
 
-          case 'credentials':
-            await this.setupCredentialsInteractive();
-            break;
-
           case 'results':
-            await this.viewResultsInteractive();
+            await this.openHtmlReport();
             break;
 
           case 'exit':
@@ -183,6 +179,13 @@ class LiumCLI {
    */
   private async runTestsInteractive(): Promise<void> {
     const pillar = await cliPrompts.promptForPillar();
+
+    // For synthetic tests, ask which module to test
+    let module: string | null = null;
+    if (pillar === 'synthetic') {
+      module = await cliPrompts.promptForModule();
+    }
+
     const environment = await cliPrompts.promptForEnvironment();
 
     // Check if credentials exist
@@ -217,6 +220,7 @@ class LiumCLI {
       await testRunner.runTests({
         pillar,
         environment,
+        module: module || undefined,
       });
     } catch (error) {
       console.error(chalk.red(`\n❌ Test execution failed: ${(error as Error).message}\n`));
@@ -260,6 +264,40 @@ class LiumCLI {
 
     // No arguments, go interactive
     await this.runTestsInteractive();
+  }
+
+  /**
+   * Open HTML report
+   */
+  private async openHtmlReport(): Promise<void> {
+    console.log(chalk.cyan('\n📊 Opening interactive test report...\n'));
+
+    const { spawn } = await import('child_process');
+
+    const reportProcess = spawn('npx', ['playwright', 'show-report', 'playwright-report'], {
+      stdio: 'inherit',
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      reportProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else if (code === 1) {
+          console.log(chalk.yellow('\n⚠️  No test report found.'));
+          console.log(chalk.gray('Run some tests first:\n'));
+          console.log(chalk.cyan('  make test-basic    # Run basic tests'));
+          console.log(chalk.cyan('  make test-auth     # Run auth tests'));
+          console.log(chalk.cyan('  make test          # Interactive test runner\n'));
+          resolve();
+        } else {
+          reject(new Error(`Report viewer exited with code ${code}`));
+        }
+      });
+
+      reportProcess.on('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
   /**
