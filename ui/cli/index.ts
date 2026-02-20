@@ -9,9 +9,10 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { cliPrompts } from './prompts.js';
 import { resultsViewer } from './results-viewer.js';
+import { testRunner } from './test-runner.js';
 import { credentialManager } from '../../shared/credentials/credential-manager.js';
 import { envSelector } from '../../shared/environment/env-selector.js';
-import type { Environment } from '../../shared/types/index.js';
+import type { Environment, Pillar } from '../../shared/types/index.js';
 
 class LiumCLI {
   /**
@@ -179,26 +180,45 @@ class LiumCLI {
    * Run tests (interactive)
    */
   private async runTestsInteractive(): Promise<void> {
-    console.log(
-      chalk.yellow(
-        '\n⚠️  Note: Test execution requires Phases 4-6 to be implemented.'
-      )
-    );
-    console.log(
-      chalk.gray('This will be available after building the test pillars.\n')
-    );
-
     const pillar = await cliPrompts.promptForPillar();
     const environment = await cliPrompts.promptForEnvironment();
 
-    console.log(
-      chalk.cyan(
-        `\n▶️  Would run ${pillar} tests against ${environment} environment`
-      )
-    );
-    console.log(
-      chalk.gray('(Test execution coming in Phases 4-6)\n')
-    );
+    // Check if credentials exist
+    const hasCredentials = credentialManager.hasCredentials(environment);
+
+    if (!hasCredentials) {
+      console.log(chalk.yellow(`\n⚠️  No credentials found for ${environment}\n`));
+      const shouldSetup = await cliPrompts.confirm(
+        'Would you like to set up credentials now?',
+        true
+      );
+
+      if (shouldSetup) {
+        await this.setupCredentialsInteractive();
+        console.log();
+      } else {
+        console.log(chalk.red('Cannot run tests without credentials\n'));
+        return;
+      }
+    }
+
+    // Verify environment config exists
+    try {
+      await envSelector.loadEnvironment(environment);
+    } catch (error) {
+      console.log(chalk.red(`\n❌ Environment config not found for: ${environment}\n`));
+      return;
+    }
+
+    // Run tests
+    try {
+      await testRunner.runTests({
+        pillar,
+        environment,
+      });
+    } catch (error) {
+      console.error(chalk.red(`\n❌ Test execution failed: ${(error as Error).message}\n`));
+    }
   }
 
   /**
@@ -209,15 +229,30 @@ class LiumCLI {
     const pillarArg = args.find(arg => arg.startsWith('--pillar='));
     const envArg = args.find(arg => arg.startsWith('--environment='));
 
-    if (pillarArg || envArg) {
-      console.log(
-        chalk.yellow(
-          '\n⚠️  Test execution requires Phases 4-6 to be implemented.'
-        )
-      );
-      console.log(
-        chalk.gray('This will be available after building the test pillars.\n')
-      );
+    if (pillarArg && envArg) {
+      const pillar = pillarArg.split('=')[1] as Pillar;
+      const environment = envArg.split('=')[1] as Environment;
+
+      // Check credentials
+      const hasCredentials = credentialManager.hasCredentials(environment);
+
+      if (!hasCredentials) {
+        console.log(chalk.red(`\n❌ No credentials found for ${environment}`));
+        console.log(chalk.gray('Run: npm run cli setup-credentials\n'));
+        process.exit(1);
+      }
+
+      // Run tests
+      try {
+        await testRunner.runTests({
+          pillar,
+          environment,
+        });
+      } catch (error) {
+        console.error(chalk.red(`\n❌ Test execution failed: ${(error as Error).message}\n`));
+        process.exit(1);
+      }
+
       return;
     }
 
