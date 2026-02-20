@@ -14,6 +14,7 @@ export interface TestRunOptions {
   headed?: boolean;
   debug?: boolean;
   grep?: string;
+  module?: string; // e.g., 'chats', 'storage', 'agents'
 }
 
 export interface TestRunResult {
@@ -70,24 +71,33 @@ export class TestRunner {
    * Run Playwright tests (synthetic or integration)
    */
   private async runPlaywrightTests(options: TestRunOptions): Promise<{ success: boolean; exitCode: number }> {
+    // Build test path - if module specified, target that directory
+    let testPath = `${options.pillar}/`;
+    if (options.module) {
+      testPath = `${options.pillar}/tests/${options.module}/`;
+      console.log(chalk.cyan(`📦 Running module: ${options.module}\n`));
+    }
+
     const args = [
       'playwright',
       'test',
-      `${options.pillar}/`,
+      testPath,
     ];
 
-    // Synthetic tests should show the browser by default
+    // Only run headed for manual/interactive tests or when explicitly requested
     const shouldRunHeaded = options.headed ||
-      options.pillar === 'synthetic' ||
       (options.grep && (
         options.grep.toLowerCase().includes('manual') ||
-        options.grep.toLowerCase().includes('poc')
+        options.grep.toLowerCase().includes('poc') ||
+        options.grep.toLowerCase().includes('multi-user')
       ));
 
     // Add options
     if (shouldRunHeaded) {
       args.push('--headed');
       console.log(chalk.yellow('📺 Running in headed mode (browser visible)\n'));
+    } else {
+      console.log(chalk.gray('🚀 Running in headless mode (fast!)\n'));
     }
 
     if (options.debug) {
