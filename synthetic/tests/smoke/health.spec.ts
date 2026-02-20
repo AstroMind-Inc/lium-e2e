@@ -48,12 +48,12 @@ test.describe('Smoke Tests - App Health', () => {
   });
 
   test('no console errors on page load', async ({ page, envConfig }) => {
-    const errors: string[] = [];
+    const allErrors: string[] = [];
 
     // Listen for console errors
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
-        errors.push(msg.text());
+        allErrors.push(msg.text());
       }
     });
 
@@ -62,14 +62,29 @@ test.describe('Smoke Tests - App Health', () => {
     // Wait a bit for any async errors
     await page.waitForTimeout(2000);
 
-    if (errors.length > 0) {
-      console.log('⚠️  Console errors found:', errors);
+    // Filter out expected errors (these are normal for unauthenticated pages)
+    const expectedErrors = [
+      '401',  // Unauthorized - expected before login
+      '404',  // Not found - some resources may not exist
+      'Client Components from Server Components',  // React/Next.js warning
+      'Set objects are not supported',  // React/Next.js warning
+    ];
+
+    const unexpectedErrors = allErrors.filter(error =>
+      !expectedErrors.some(expected => error.includes(expected))
+    );
+
+    if (unexpectedErrors.length > 0) {
+      console.log('❌ UNEXPECTED console errors:', unexpectedErrors);
     } else {
-      console.log('✅ No console errors');
+      console.log('✅ No unexpected console errors');
+      if (allErrors.length > 0) {
+        console.log(`   (${allErrors.length} expected errors filtered out)`);
+      }
     }
 
-    // Warning only, not a hard failure
-    expect(errors.length).toBeLessThan(10);
+    // Only fail on unexpected errors
+    expect(unexpectedErrors.length).toBe(0);
   });
 
   test('basic JavaScript is working', async ({ page, envConfig }) => {
