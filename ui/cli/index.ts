@@ -20,11 +20,13 @@ class LiumCLI {
    */
   private displayBanner(): void {
     console.clear();
-    console.log(chalk.bold.cyan('\n╔════════════════════════════════════════════════════════╗'));
-    console.log(chalk.bold.cyan('║                                                        ║'));
-    console.log(chalk.bold.cyan('║         Lium E2E Testing Framework                     ║'));
-    console.log(chalk.bold.cyan('║                                                        ║'));
-    console.log(chalk.bold.cyan('╚════════════════════════════════════════════════════════╝'));
+    console.log();
+    console.log(chalk.cyan('  ╦  ╦╦ ╦╔╦╗  ') + chalk.magenta('╔═╗╔═╗╔═╗'));
+    console.log(chalk.cyan('  ║  ║║ ║║║║  ') + chalk.magenta('║╣ ╔═╝║╣ '));
+    console.log(chalk.cyan('  ╩═╝╩╚═╝╩ ╩  ') + chalk.magenta('╚═╝╚═╝╚═╝'));
+    console.log();
+    console.log(chalk.gray('  End-to-End Testing Framework'));
+    console.log(chalk.gray('  ─────────────────────────────'));
     console.log();
   }
 
