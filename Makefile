@@ -142,20 +142,12 @@ up: test
 
 # Run all tests for each pillar (non-interactive, headless, fast)
 test-syn-all: .check-auth
-	@TIMESTAMP=$$(date +"%Y-%m-%dT%H-%M-%S"); \
-	REPORT_DIR="playwright-reports/synthetic-$$TIMESTAMP"; \
-	echo "🧪 Running ALL synthetic tests (headless)..."; \
-	PLAYWRIGHT_HTML_REPORT="$$REPORT_DIR" npx playwright test synthetic/; \
-	ln -sfn "synthetic-$$TIMESTAMP" playwright-reports/latest; \
-	echo "📊 Report saved: $$REPORT_DIR/index.html"
+	@echo "🧪 Running ALL synthetic tests (headless)..."
+	@npx playwright test synthetic/
 
 test-api-all: .check-auth
-	@TIMESTAMP=$$(date +"%Y-%m-%dT%H-%M-%S"); \
-	REPORT_DIR="playwright-reports/integration-$$TIMESTAMP"; \
-	echo "🧪 Running ALL integration tests (headless)..."; \
-	PLAYWRIGHT_HTML_REPORT="$$REPORT_DIR" npx playwright test integration/; \
-	ln -sfn "integration-$$TIMESTAMP" playwright-reports/latest; \
-	echo "📊 Report saved: $$REPORT_DIR/index.html"
+	@echo "🧪 Running ALL integration tests (headless)..."
+	@npx playwright test integration/
 
 test-perf-all: .check-auth
 	@echo "🧪 Running ALL performance tests..."
@@ -332,30 +324,19 @@ results-perf:
 
 # View interactive HTML report with screenshots/videos
 report:
-	@if [ -L "playwright-reports/latest" ]; then \
-		echo "📊 Opening latest test report..."; \
-		npx playwright show-report playwright-reports/latest; \
-	elif [ -d "playwright-report" ]; then \
+	@if [ -d "playwright-report" ]; then \
 		echo "📊 Opening test report..."; \
 		npx playwright show-report playwright-report; \
 	else \
-		echo "❌ No reports found. Run tests first."; \
+		echo "❌ No report found. Run tests first with 'make test-syn-all'"; \
 		exit 1; \
 	fi
 
 report-all:
-	@echo "📊 Test run history:"; \
+	@echo "📊 HTML reports overwrite each run"; \
 	echo ""; \
-	if [ -d "playwright-reports" ]; then \
-		for dir in $$(ls -t playwright-reports/ | grep -v '^latest$$'); do \
-			echo "  $$dir"; \
-		done | head -20; \
-	else \
-		echo "  No test runs saved yet"; \
-	fi; \
-	echo ""; \
-	echo "Use 'make report' to view latest report"; \
-	echo "Use 'npx playwright show-report playwright-reports/<name>' for specific run"
+	echo "Use 'make report' to view latest HTML report"; \
+	echo "Use 'make results' for historical JSONL data"
 
 # Cleanup
 clean:
@@ -368,9 +349,9 @@ clean:
 	@echo "✅ Clean complete"
 
 clean-reports:
-	@echo "🧹 Cleaning old test reports..."; \
-	rm -rf playwright-report playwright-reports; \
-	echo "✅ All reports cleaned (JSONL results preserved)"
+	@echo "🧹 Cleaning HTML reports..."; \
+	rm -rf playwright-report; \
+	echo "✅ HTML reports cleaned (JSONL results preserved)"
 
 # Stop running tests
 down:

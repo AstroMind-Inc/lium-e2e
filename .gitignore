@@ -17,7 +17,6 @@ results/*.json
 # Playwright artifacts
 test-results/
 playwright-report/
-playwright-reports/
 playwright/.cache/
 playwright/.auth/*.json
 !playwright/.auth/.gitkeep
