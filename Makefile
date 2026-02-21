@@ -43,7 +43,7 @@ help:
 	@echo "    • performance/tests/<module>/   → make test-perf-<module>"
 	@echo ""
 	@echo "Results:"
-	@echo "  make report         - Open interactive HTML report (recommended!)"
+	@echo "  make report         - Open latest HTML report (any pillar)"
 	@echo "  make results        - JSONL summary (synthetic tests)"
 	@echo "  make results-flaky  - Find flaky tests"
 	@echo "  make results-api    - JSONL summary (integration tests)"
@@ -328,7 +328,9 @@ report:
 		echo "📊 Opening test report..."; \
 		npx playwright show-report playwright-report; \
 	else \
-		echo "❌ No report found. Run tests first with 'make test-syn-all'"; \
+		echo "❌ No report found. Run tests first:"; \
+		echo "   • make test-syn-all  (browser tests)"; \
+		echo "   • make test-api-all  (API tests)"; \
 		exit 1; \
 	fi
 
