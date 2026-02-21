@@ -144,10 +144,20 @@ up: test
 test-syn-all: .check-auth
 	@echo "🧪 Running ALL synthetic tests (headless)..."
 	@npx playwright test --config=synthetic/playwright.config.ts
+	@if [ ! "$$CI" = "true" ] && [ -d "playwright-report" ]; then \
+		echo ""; \
+		echo "📊 Opening HTML report..."; \
+		npx playwright show-report playwright-report; \
+	fi
 
 test-api-all: .check-auth
 	@echo "🧪 Running ALL integration tests (headless)..."
 	@npx playwright test --config=integration/playwright.config.ts
+	@if [ ! "$$CI" = "true" ] && [ -d "playwright-report" ]; then \
+		echo ""; \
+		echo "📊 Opening HTML report..."; \
+		npx playwright show-report playwright-report; \
+	fi
 
 test-perf-all: .check-auth
 	@echo "🧪 Running ALL performance tests..."
