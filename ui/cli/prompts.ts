@@ -88,7 +88,7 @@ export class CLIPrompts {
     };
 
     // Build choices dynamically
-    const choices = [
+    const choices: Array<any> = [
       {
         name: labels[pillar].all,
         value: "all",
@@ -97,10 +97,7 @@ export class CLIPrompts {
         name: "⬅️  Back to pillar selection",
         value: "back",
       },
-      {
-        name: "━".repeat(40),
-        disabled: true,
-      },
+      new inquirer.Separator("━".repeat(40)),
     ];
 
     // Add discovered modules (show count and tags)
