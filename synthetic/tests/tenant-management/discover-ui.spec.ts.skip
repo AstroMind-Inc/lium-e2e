@@ -1,0 +1,122 @@
+/**
+ * UI Discovery Test
+ *
+ * This test helps discover the UI structure for tenant management.
+ * Rename to .spec.ts (remove .skip) to run it.
+ *
+ * It will:
+ * 1. Navigate to /admin
+ * 2. Take screenshots
+ * 3. Log all visible buttons/links
+ * 4. Help you identify the right selectors
+ */
+
+import { test } from '../../fixtures/index.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+test('Discover admin UI structure', async ({ browser, envConfig }) => {
+  const baseUrl = envConfig.baseUrls.web;
+
+  // Create admin context
+  const adminContext = await browser.newContext({
+    storageState: path.resolve(__dirname, '../../../playwright/.auth/admin.json'),
+  });
+  const adminPage = await adminContext.newPage();
+
+  console.log('🔍 Discovering UI structure...\n');
+
+  // Navigate to home
+  await adminPage.goto(baseUrl);
+  await adminPage.waitForLoadState('networkidle');
+  await adminPage.waitForTimeout(1000);
+
+  console.log('📸 Taking screenshot of home page...');
+  await adminPage.screenshot({ path: 'test-results/ui-discovery-home-page.png', fullPage: true });
+
+  // Click account in bottom-left
+  console.log('📍 Clicking account menu in bottom-left...');
+  const accountButtons = await adminPage.locator('button').all();
+  console.log(`   Found ${accountButtons.length} buttons on page`);
+
+  // Try to find account button (usually in bottom-left)
+  const accountButton = adminPage.locator('button:has-text("account"), [aria-label*="account" i], button >> text=/.*account.*/i').last();
+  if (await accountButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await accountButton.click();
+    await adminPage.waitForTimeout(1000);
+
+    console.log('📸 Taking screenshot of account menu...');
+    await adminPage.screenshot({ path: 'test-results/ui-discovery-account-menu.png', fullPage: true });
+
+    // Log menu items
+    console.log('\n📋 Menu items:');
+    const menuItems = await adminPage.locator('[role="menuitem"], [role="menu"] button, [role="menu"] a').allTextContents();
+    menuItems.forEach((item, i) => console.log(`  ${i + 1}. ${item}`));
+
+    // Click Admin if available
+    const adminMenuItem = adminPage.locator('text=/^Admin$/i, [role="menuitem"]:has-text("Admin")').first();
+    if (await adminMenuItem.isVisible({ timeout: 2000 }).catch(() => false)) {
+      console.log('\n✓ Found "Admin" menu item, clicking...');
+      await adminMenuItem.click();
+      await adminPage.waitForLoadState('networkidle');
+      await adminPage.waitForTimeout(2000);
+    } else {
+      console.log('\n⚠️  Could not find "Admin" menu item');
+    }
+  } else {
+    console.log('\n⚠️  Could not find account button in bottom-left');
+  }
+
+  console.log('📸 Taking screenshots...');
+  await adminPage.screenshot({ path: 'test-results/ui-discovery-admin-page.png', fullPage: true });
+
+  // Log all headings
+  console.log('\n📋 Headings on page:');
+  const headings = await adminPage.locator('h1, h2, h3, h4, h5, h6').allTextContents();
+  headings.forEach((h, i) => console.log(`  ${i + 1}. ${h}`));
+
+  // Log all buttons
+  console.log('\n🔘 Buttons on page:');
+  const buttons = await adminPage.locator('button').all();
+  for (let i = 0; i < Math.min(buttons.length, 20); i++) {
+    const btn = buttons[i];
+    const text = await btn.textContent();
+    const ariaLabel = await btn.getAttribute('aria-label');
+    const title = await btn.getAttribute('title');
+    console.log(`  ${i + 1}. Text: "${text?.trim()}" | aria-label: "${ariaLabel}" | title: "${title}"`);
+  }
+
+  // Log all links
+  console.log('\n🔗 Links on page:');
+  const links = await adminPage.locator('a').all();
+  for (let i = 0; i < Math.min(links.length, 20); i++) {
+    const link = links[i];
+    const text = await link.textContent();
+    const href = await link.getAttribute('href');
+    console.log(`  ${i + 1}. Text: "${text?.trim()}" | href: "${href}"`);
+  }
+
+  // Search for "seismic" text
+  console.log('\n🔎 Searching for "seismic" text...');
+  const seismicElements = await adminPage.locator('text=/.*seismic.*/i').all();
+  console.log(`  Found ${seismicElements.length} elements containing "seismic"`);
+  for (let i = 0; i < Math.min(seismicElements.length, 5); i++) {
+    const el = seismicElements[i];
+    const tagName = await el.evaluate(node => node.tagName);
+    const text = await el.textContent();
+    const parent = await el.evaluate(node => node.parentElement?.tagName);
+    console.log(`  ${i + 1}. <${tagName}> (parent: <${parent}>) - "${text?.trim()}"`);
+  }
+
+  // Log page HTML (truncated)
+  console.log('\n📄 Page HTML (first 2000 chars):');
+  const html = await adminPage.content();
+  console.log(html.substring(0, 2000));
+
+  await adminContext.close();
+
+  console.log('\n✅ Discovery complete! Check test-results/ui-discovery-admin-page.png');
+  console.log('💡 Use the logged information to update the selectors in member-lifecycle.spec.ts');
+});

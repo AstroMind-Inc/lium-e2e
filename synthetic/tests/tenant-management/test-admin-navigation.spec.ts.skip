@@ -1,0 +1,90 @@
+/**
+ * Test Admin Navigation
+ * Simple test to verify we can navigate to admin workspace
+ */
+
+import { test, expect } from '../../fixtures/index.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+test('Navigate to Admin workspace', async ({ browser, envConfig }) => {
+  const baseUrl = envConfig.baseUrls.web;
+
+  // Create admin context
+  const adminContext = await browser.newContext({
+    storageState: path.resolve(__dirname, '../../../playwright/.auth/admin.json'),
+  });
+  const adminPage = await adminContext.newPage();
+
+  console.log('🔍 Testing admin navigation...\n');
+
+  // Navigate to home
+  await adminPage.goto(baseUrl);
+  await adminPage.waitForLoadState('networkidle');
+  await adminPage.waitForTimeout(2000);
+
+  console.log('📸 Screenshot 1: Home page');
+  await adminPage.screenshot({ path: 'test-results/admin-nav-1-home.png', fullPage: true });
+
+  // Click account menu button
+  console.log('📍 Clicking account menu...');
+  const accountButton = adminPage.locator('[aria-label="Account menu"]');
+  await accountButton.click();
+  await adminPage.waitForTimeout(1000);
+
+  console.log('📸 Screenshot 2: Account menu open');
+  await adminPage.screenshot({ path: 'test-results/admin-nav-2-account-menu.png', fullPage: true });
+
+  // Log menu items
+  console.log('\n📋 Menu items visible:');
+  const menuItems = await adminPage.locator('[role="menuitem"], [role="menu"] button, [role="menu"] a').allTextContents();
+  menuItems.forEach((item, i) => console.log(`  ${i + 1}. "${item}"`));
+
+  // Try to find and click Admin option
+  console.log('\n📍 Looking for "Admin" menu item...');
+
+  // Try multiple selectors
+  const adminSelectors = [
+    '[role="menuitem"]:has-text("Admin")',
+    'button:has-text("Admin")',
+    'a:has-text("Admin")',
+    'text=/^Admin$/i',
+  ];
+
+  let clicked = false;
+  for (const selector of adminSelectors) {
+    const element = adminPage.locator(selector).first();
+    if (await element.isVisible({ timeout: 1000 }).catch(() => false)) {
+      console.log(`   ✓ Found using selector: ${selector}`);
+      await element.click();
+      clicked = true;
+      break;
+    }
+  }
+
+  if (!clicked) {
+    console.log('   ⚠️  Could not find "Admin" menu item');
+    console.log('   Available text in menu:');
+    const allText = await adminPage.locator('[role="menu"]').first().textContent();
+    console.log(`   ${allText}`);
+  } else {
+    await adminPage.waitForLoadState('networkidle');
+    await adminPage.waitForTimeout(2000);
+
+    console.log('📸 Screenshot 3: Admin workspace');
+    await adminPage.screenshot({ path: 'test-results/admin-nav-3-admin-workspace.png', fullPage: true });
+
+    const currentUrl = adminPage.url();
+    console.log(`\n✓ Current URL: ${currentUrl}`);
+
+    if (currentUrl.includes('/admin')) {
+      console.log('✅ Successfully navigated to admin workspace!');
+    } else {
+      console.log('⚠️  URL does not contain /admin');
+    }
+  }
+
+  await adminContext.close();
+});

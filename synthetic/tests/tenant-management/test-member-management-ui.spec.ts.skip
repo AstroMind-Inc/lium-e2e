@@ -1,0 +1,91 @@
+/**
+ * Test Member Management UI
+ * Discover the member management interface
+ */
+
+import { test } from '../../fixtures/index.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+test('Explore member management interface', async ({ browser, envConfig }) => {
+  const baseUrl = envConfig.baseUrls.web;
+
+  const adminContext = await browser.newContext({
+    storageState: path.resolve(__dirname, '../../../playwright/.auth/admin.json'),
+  });
+  const adminPage = await adminContext.newPage();
+
+  // Navigate to admin and open Seismic tenant management
+  await adminPage.goto(baseUrl);
+  await adminPage.waitForLoadState('networkidle');
+
+  await adminPage.locator('[aria-label="Account menu"]').click();
+  await adminPage.waitForTimeout(500);
+
+  await adminPage.locator('a:has-text("Admin")').click();
+  await adminPage.waitForLoadState('networkidle');
+  await adminPage.waitForTimeout(2000);
+
+  console.log('📍 Finding Seismic tenant...');
+  const seismicRow = adminPage.locator('tr:has-text("Seismic")');
+
+  // Click the actions button (three-dot menu)
+  const actionsButton = seismicRow.locator('button[aria-label*="more" i]').first();
+  await actionsButton.click();
+  await adminPage.waitForTimeout(500);
+
+  // Click "Manage"
+  console.log('📍 Clicking Manage...');
+  await adminPage.locator('text=/^Manage$/i').click();
+  await adminPage.waitForLoadState('networkidle');
+  await adminPage.waitForTimeout(2000);
+
+  console.log('📸 Screenshot: Member management page');
+  await adminPage.screenshot({ path: 'test-results/member-mgmt-1-page.png', fullPage: true });
+
+  const currentUrl = adminPage.url();
+  console.log(`\n✓ Current URL: ${currentUrl}`);
+
+  // Log all headings
+  console.log('\n📋 Headings on page:');
+  const headings = await adminPage.locator('h1, h2, h3, h4').allTextContents();
+  headings.forEach((h, i) => console.log(`  ${i + 1}. ${h}`));
+
+  // Log all buttons
+  console.log('\n🔘 Buttons on page:');
+  const buttons = await adminPage.locator('button').all();
+  for (let i = 0; i < Math.min(buttons.length, 30); i++) {
+    const btn = buttons[i];
+    const text = await btn.textContent();
+    const ariaLabel = await btn.getAttribute('aria-label');
+    console.log(`  ${i + 1}. Text: "${text?.trim()}" | aria-label: "${ariaLabel}"`);
+  }
+
+  // Look for add member button
+  console.log('\n🔍 Looking for "Add" button...');
+  const addSelectors = [
+    'button:has-text("Add")',
+    'button:has-text("Invite")',
+    'button:has-text("New")',
+    'button:has-text("+")',
+    'button[aria-label*="add" i]',
+  ];
+
+  for (const selector of addSelectors) {
+    const btn = adminPage.locator(selector).first();
+    if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      const text = await btn.textContent();
+      console.log(`   ✓ Found add button: "${text}" using ${selector}`);
+    }
+  }
+
+  // Check if there are any existing members listed
+  console.log('\n👥 Looking for existing members...');
+  const memberEmails = await adminPage.locator('text=/@.+\\..+/').allTextContents();
+  console.log(`   Found ${memberEmails.length} email addresses on page`);
+  memberEmails.slice(0, 5).forEach((email, i) => console.log(`   ${i + 1}. ${email}`));
+
+  await adminContext.close();
+});

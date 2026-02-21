@@ -1,0 +1,109 @@
+/**
+ * Test Tenant Actions Menu
+ * Discover what actions are available for a tenant
+ */
+
+import { test } from '../../fixtures/index.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+test('Explore Seismic tenant actions', async ({ browser, envConfig }) => {
+  const baseUrl = envConfig.baseUrls.web;
+
+  const adminContext = await browser.newContext({
+    storageState: path.resolve(__dirname, '../../../playwright/.auth/admin.json'),
+  });
+  const adminPage = await adminContext.newPage();
+
+  // Navigate to admin tenants page
+  await adminPage.goto(baseUrl);
+  await adminPage.waitForLoadState('networkidle');
+
+  // Click account menu
+  await adminPage.locator('[aria-label="Account menu"]').click();
+  await adminPage.waitForTimeout(500);
+
+  // Click Admin link
+  await adminPage.locator('a:has-text("Admin")').click();
+  await adminPage.waitForLoadState('networkidle');
+  await adminPage.waitForTimeout(2000);
+
+  console.log('📍 On admin tenants page');
+  await adminPage.screenshot({ path: 'test-results/tenant-actions-1-page.png', fullPage: true });
+
+  // Find the Seismic tenant row
+  console.log('🔍 Finding Seismic tenant row...');
+  const seismicRow = adminPage.locator('tr:has-text("Seismic")');
+  const isVisible = await seismicRow.isVisible();
+  console.log(`   ${isVisible ? '✓' : '✗'} Seismic row visible: ${isVisible}`);
+
+  if (isVisible) {
+    // Find the actions button (three-dot menu) in the Seismic row
+    console.log('📍 Looking for actions button...');
+
+    // Try multiple selectors for the three-dot menu
+    const actionSelectors = [
+      'button[aria-label*="more" i]',
+      'button[aria-label*="actions" i]',
+      'button[aria-label*="menu" i]',
+      'button:has-text("⋮")',
+      'button >> nth=-1', // Last button in row
+    ];
+
+    let actionsButton = null;
+    for (const selector of actionSelectors) {
+      const btn = seismicRow.locator(selector).first();
+      if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        console.log(`   ✓ Found actions button using: ${selector}`);
+        actionsButton = btn;
+        break;
+      }
+    }
+
+    // If specific selectors don't work, just get the last button in the row
+    if (!actionsButton) {
+      console.log('   ℹ️  Trying to get last button in row...');
+      const buttons = await seismicRow.locator('button').all();
+      console.log(`   Found ${buttons.length} buttons in row`);
+      if (buttons.length > 0) {
+        actionsButton = buttons[buttons.length - 1];
+      }
+    }
+
+    if (actionsButton) {
+      console.log('📍 Clicking actions button...');
+      await actionsButton.click();
+      await adminPage.waitForTimeout(1000);
+
+      await adminPage.screenshot({ path: 'test-results/tenant-actions-2-menu-open.png', fullPage: true });
+
+      // Log all menu items
+      console.log('\n📋 Available actions:');
+      const menuItems = await adminPage.locator('[role="menuitem"], [role="menu"] button, [role="menu"] a').allTextContents();
+      menuItems.forEach((item, i) => console.log(`  ${i + 1}. "${item}"`));
+
+      // Look for "Manage" option
+      console.log('\n🔍 Looking for management option...');
+      const manageOptions = [
+        'text=/manage/i',
+        'text=/edit/i',
+        'text=/settings/i',
+        'text=/members/i',
+      ];
+
+      for (const selector of manageOptions) {
+        const option = adminPage.locator(selector).first();
+        if (await option.isVisible({ timeout: 1000 }).catch(() => false)) {
+          const text = await option.textContent();
+          console.log(`   ✓ Found: "${text}" using selector: ${selector}`);
+        }
+      }
+    } else {
+      console.log('   ✗ Could not find actions button');
+    }
+  }
+
+  await adminContext.close();
+});
