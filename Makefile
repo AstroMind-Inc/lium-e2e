@@ -24,6 +24,11 @@ help:
 	@echo "  make test           - Interactive test runner (prompts for pillar/env)"
 	@echo "  make up             - Alias for 'make test'"
 	@echo ""
+	@echo "Run All Tests (Non-Interactive, Headless):"
+	@echo "  make test-syn-all   - Run ALL synthetic tests (fast, headless)"
+	@echo "  make test-api-all   - Run ALL integration tests (fast, headless)"
+	@echo "  make test-perf-all  - Run ALL performance tests"
+	@echo ""
 	@echo "Auto-Discovered Test Modules:"
 	@echo "  Synthetic (Browser):    make test-syn-<module>   (e.g., test-syn-basic, test-syn-auth)"
 	@echo "  Integration (API):      make test-api-<module>   (e.g., test-api-health, test-api-users)"
@@ -139,6 +144,26 @@ test: .check-auth
 
 # Alias for intuitive 'up' command
 up: test
+
+# Run all tests for each pillar (non-interactive, headless, fast)
+test-syn-all: .check-auth
+	@echo "🧪 Running ALL synthetic tests (headless)..."
+	@npx playwright test synthetic/
+
+test-api-all: .check-auth
+	@echo "🧪 Running ALL integration tests (headless)..."
+	@npx playwright test integration/
+
+test-perf-all: .check-auth
+	@echo "🧪 Running ALL performance tests..."
+	@if ! which k6 > /dev/null 2>&1; then \
+		echo "❌ k6 not installed. Run: brew install k6"; \
+		exit 1; \
+	fi
+	@for test_file in $$(find performance/tests -name "*.js" -type f); do \
+		echo "Running: $$test_file"; \
+		k6 run "$$test_file"; \
+	done
 
 # Pattern rules for auto-discovered test modules
 # These MUST come after special-case targets (like test-multi-user) to avoid conflicts
