@@ -18,8 +18,12 @@
 # 1. Initial setup (one time)
 make setup
 
-# 2. Authenticate (one time)
-make auth-setup-admin
+# 2. Authenticate (one time) - sets up both admin and user
+make auth-setup-all
+
+# Use credentials from 1Password > Test Accounts:
+#   Admin: your @astromind.com account
+#   User:  test-user@astromind.com (password in 1Password)
 
 # 3. Run tests
 make test               # Interactive menu
@@ -49,9 +53,13 @@ No manual steps - just run tests and view rich HTML results with screenshots, tr
 **One auth setup works for ALL test types!**
 
 ```bash
-make auth-setup-admin   # Authenticate once
+make auth-setup-all     # Authenticate once (admin + user)
 
-# Now both work with same session:
+# Credentials in 1Password > Test Accounts:
+#   Admin: your @astromind.com account
+#   User:  test-user@astromind.com
+
+# Now both work with same sessions:
 make test-syn-all       # Browser tests ✓
 make test-api-all       # API tests ✓ (uses same cookies)
 ```
@@ -171,9 +179,15 @@ tags:
 ### One-Time Setup
 
 ```bash
-make auth-setup-admin    # Login as @astromind.com admin
-make auth-setup-user     # Login as regular user (optional)
+make auth-setup-all      # Setup both admin and user (recommended)
+# Or setup individually:
+make auth-setup-admin    # Admin only (@astromind.com)
+make auth-setup-user     # User only (test-user@astromind.com)
 ```
+
+**Credentials**: Check **1Password > Test Accounts**
+- **Admin**: Use your @astromind.com account
+- **User**: `test-user@astromind.com` (password in 1Password)
 
 Opens browser → You log in via OAuth → Session saved forever
 
@@ -573,7 +587,7 @@ Future: JSONL-based historical tracking and trend analysis.
 ### "No auth session found"
 
 ```bash
-make auth-setup-admin
+make auth-setup-all
 ```
 
 ### "Authentication expired"
@@ -725,7 +739,7 @@ The `ModuleScanner` class automatically finds test modules:
 ```bash
 # One-time setup
 make setup
-make auth-setup-admin
+make auth-setup-all
 
 # Daily workflow
 make test                   # Interactive menu

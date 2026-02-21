@@ -64,7 +64,8 @@ async function globalSetup(config: FullConfig) {
       hasValidAuth = true;
     } else {
       console.log("⚠️  Admin session expired and could not be refreshed");
-      console.log("   Run: make auth-setup-admin\n");
+      console.log("   Run: make auth-setup-all (or make auth-setup-admin)\n");
+      console.log("   Credentials: 1Password > Test Accounts\n");
     }
     console.log();
   }
@@ -89,7 +90,8 @@ async function globalSetup(config: FullConfig) {
   ) {
     console.log("⚠️  No valid authentication sessions available");
     console.log("   Tests requiring authentication may fail");
-    console.log("   Run: make auth-setup-admin or make auth-setup-user\n");
+    console.log("   Run: make auth-setup-all\n");
+    console.log("   Credentials: 1Password > Test Accounts\n");
   }
 
   console.log("✅ Pre-flight checks complete\n");

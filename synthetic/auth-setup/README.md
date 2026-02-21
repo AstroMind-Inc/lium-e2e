@@ -14,7 +14,19 @@ This directory contains scripts for one-time interactive authentication that sav
 
 ## Quick Start
 
-### Setup Admin Authentication
+### Setup Both (Recommended)
+
+```bash
+make auth-setup-all
+```
+
+**Credentials**: Check **1Password > Test Accounts**
+- **Admin**: Use your @astromind.com account (via Google OAuth)
+- **User**: `test-user@astromind.com` (password in 1Password)
+
+This sets up both admin and user sessions. Most test scenarios need both.
+
+### Setup Admin Authentication Only
 
 ```bash
 make auth-setup-admin
@@ -25,18 +37,18 @@ make auth-setup-admin
 - Session saved to `playwright/.auth/admin.json` (gitignored)
 - All admin tests will now run headless
 
-### Setup Regular User Authentication
+### Setup Regular User Authentication Only
 
 ```bash
 make auth-setup-user
 ```
 
 - Opens browser with clear prompt
-- You log in with non-@astromind.com account
+- You log in with `test-user@astromind.com` (credentials in 1Password)
 - Session saved to `playwright/.auth/user.json` (gitignored)
 - All user tests will now run headless
 
-### Setup Both
+### Legacy: Setup Both Individually
 
 ```bash
 make auth-setup-all

@@ -78,8 +78,9 @@ export const test = base.extend<CustomFixtures>({
 
     if (!storageState) {
       console.warn(
-        "⚠️  No auth session found. Run 'make auth-setup-admin' to authenticate.",
+        "⚠️  No auth session found. Run 'make auth-setup-all' to authenticate.",
       );
+      console.warn("   Credentials: 1Password > Test Accounts");
       console.warn("   API tests requiring authentication will fail.");
     }
 

@@ -16,9 +16,13 @@
 ### 1. **Turn-Key Operation**
 ```bash
 make setup              # One-time setup (5 minutes)
-make auth-setup-admin   # Authenticate once
+make auth-setup-all     # Authenticate once (admin + user)
 make test-syn-all       # Run all browser tests → Report opens automatically
 ```
+
+**Credentials**: 1Password > Test Accounts
+- Admin: your @astromind.com account
+- User: `test-user@astromind.com`
 
 No Node.js knowledge required. Just `make` commands.
 
@@ -37,9 +41,13 @@ make test                 # ✅ Shows in CLI menu
 ### 3. **Unified Authentication**
 One auth setup works for ALL test types:
 ```bash
-make auth-setup-admin    # Authenticate once
+make auth-setup-all      # Authenticate once (admin + user)
 
-# Both work with same session:
+# Credentials in 1Password > Test Accounts:
+#   Admin: your @astromind.com account
+#   User:  test-user@astromind.com
+
+# Both work with same sessions:
 make test-syn-all        # Browser tests ✅
 make test-api-all        # API tests ✅ (reuses cookies)
 ```
@@ -106,7 +114,11 @@ All pillars use the same auto-discovery system.
 ```bash
 cd lium-e2e
 make setup              # Install deps, k6, create directories
-make auth-setup-admin   # Authenticate via browser (saved forever)
+make auth-setup-all     # Authenticate both admin + user (saved forever)
+
+# Credentials in 1Password > Test Accounts:
+#   Admin: your @astromind.com account
+#   User:  test-user@astromind.com
 ```
 
 ### Run Tests
@@ -181,7 +193,8 @@ tags: [critical, new]
 
 ### ✅ DO
 - Use auto-discovery (add folders, get commands)
-- Run `make auth-setup-admin` once, reuse forever
+- Run `make auth-setup-all` once, reuse forever
+- Use credentials from 1Password > Test Accounts
 - Let pre-flight checks catch issues early
 - Use the interactive CLI (`make test`) for exploration
 - Add `manifest.yml` for better test organization

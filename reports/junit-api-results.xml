@@ -1,17 +1,125 @@
-<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="0.45499800000000007">
-<testsuite name="health/api-health.spec.ts" timestamp="2026-02-21T03:55:32.108Z" hostname="api" tests="2" failures="0" skipped="0" time="0.072" errors="0">
-<testcase name="Backend API Health › API responds to health check" classname="health/api-health.spec.ts" time="0.036">
+<testsuites id="" name="" tests="19" failures="0" skipped="11" errors="0" time="0.617492">
+<testsuite name="health/api-health.spec.ts" timestamp="2026-02-21T06:13:57.541Z" hostname="api" tests="2" failures="0" skipped="0" time="0.079" errors="0">
+<testcase name="Backend API Health › API responds to health check" classname="health/api-health.spec.ts" time="0.04">
 <system-out>
 <![CDATA[Checking API health at: http://lium-api:8000
 Response status: 404
 ]]>
 </system-out>
 </testcase>
-<testcase name="Backend API Health › API is reachable" classname="health/api-health.spec.ts" time="0.036">
+<testcase name="Backend API Health › API is reachable" classname="health/api-health.spec.ts" time="0.039">
 <system-out>
 <![CDATA[API base URL responded with: 404
 ]]>
 </system-out>
+</testcase>
+</testsuite>
+<testsuite name="health-check.spec.ts" timestamp="2026-02-21T06:13:57.541Z" hostname="api" tests="6" failures="0" skipped="0" time="0.217" errors="0">
+<testcase name="Health Check API › GET /health should return 200" classname="health-check.spec.ts" time="0.035">
+</testcase>
+<testcase name="Health Check API › GET /health should return valid response format" classname="health-check.spec.ts" time="0.036">
+<system-out>
+<![CDATA[Validation errors: [ [32m"root: must have required property 'timestamp'"[39m ]
+]]>
+</system-out>
+</testcase>
+<testcase name="Health Check API › GET /health should respond within timeout" classname="health-check.spec.ts" time="0.036">
+</testcase>
+<testcase name="Health Check API › GET /health should have correct headers" classname="health-check.spec.ts" time="0.036">
+</testcase>
+<testcase name="Health Check - Error Handling › should handle invalid endpoints gracefully" classname="health-check.spec.ts" time="0.036">
+</testcase>
+<testcase name="Health Check - Error Handling › should return proper error format for 404" classname="health-check.spec.ts" time="0.038">
+</testcase>
+</testsuite>
+<testsuite name="users.spec.ts" timestamp="2026-02-21T06:13:57.541Z" hostname="api" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="User API › GET /users should return user list" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API › GET /users/:id should return single user" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API › GET /users with pagination should work" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API › POST /users should create new user" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API › PUT /users/:id should update user" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API › DELETE /users/:id should delete user" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API - Error Handling › GET /users/:id with invalid ID should return 404" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API - Error Handling › POST /users without authentication should return 401" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API - Error Handling › POST /users with invalid data should return 400" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API - Performance › GET /users should respond quickly" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User API - Performance › Concurrent requests should work" classname="users.spec.ts" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
 </testcase>
 </testsuite>
 </testsuites>
