@@ -98,7 +98,13 @@ async function checkTokenValidity(storageState: StorageState, baseUrl: string): 
     await browser.close();
     return isAuthenticated;
   } catch (error) {
-    console.warn(`Token validity check failed: ${(error as Error).message}`);
+    const errorMsg = (error as Error).message;
+    // If the app isn't running, we can't validate - assume tokens might be valid
+    if (errorMsg.includes('ERR_NAME_NOT_RESOLVED') || errorMsg.includes('ERR_CONNECTION_REFUSED')) {
+      console.log('  ℹ️  Cannot reach app - skipping validation');
+      return true; // Assume valid, let tests fail naturally if they're not
+    }
+    console.warn(`  Token validity check failed: ${errorMsg}`);
     return false;
   }
 }
@@ -153,7 +159,13 @@ async function attemptRefresh(
     await browser.close();
     return false;
   } catch (error) {
-    console.warn(`Token refresh attempt failed: ${(error as Error).message}`);
+    const errorMsg = (error as Error).message;
+    // If the app isn't running, we can't refresh - but this is OK
+    if (errorMsg.includes('ERR_NAME_NOT_RESOLVED') || errorMsg.includes('ERR_CONNECTION_REFUSED')) {
+      console.log('  ℹ️  Cannot reach app - skipping refresh');
+      return true; // Assume OK, let tests handle the connection error
+    }
+    console.warn(`  Token refresh attempt failed: ${errorMsg}`);
     return false;
   }
 }

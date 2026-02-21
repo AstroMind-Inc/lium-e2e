@@ -6,7 +6,11 @@
 import { spawn } from 'child_process';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Pillar, Environment } from '../../shared/types/index.js';
+import { refreshAuthIfNeeded } from '../../shared/auth/token-refresh.js';
+import inquirer from 'inquirer';
 
 export interface TestRunOptions {
   pillar: Pillar;
@@ -71,6 +75,12 @@ export class TestRunner {
    * Run Playwright tests (synthetic or integration)
    */
   private async runPlaywrightTests(options: TestRunOptions): Promise<{ success: boolean; exitCode: number }> {
+    // Check auth tokens before running tests
+    const authValid = await this.checkAndRefreshAuth(options.environment);
+    if (!authValid) {
+      return { success: false, exitCode: 1 };
+    }
+
     // Build test path - if module specified, target that directory
     let testPath = `${options.pillar}/`;
     if (options.module) {
@@ -214,6 +224,109 @@ export class TestRunner {
     }
 
     return `${seconds}s`;
+  }
+
+  /**
+   * Check and refresh authentication tokens
+   */
+  private async checkAndRefreshAuth(environment: Environment): Promise<boolean> {
+    const authDir = path.resolve('./playwright/.auth');
+    const adminAuthFile = path.join(authDir, 'admin.json');
+    const userAuthFile = path.join(authDir, 'user.json');
+
+    // Get base URL from environment config
+    const baseUrl = await this.getBaseUrl(environment);
+
+    console.log(chalk.cyan('🔍 Checking authentication sessions...\n'));
+
+    let hasValidAuth = false;
+
+    // Check admin session
+    if (fs.existsSync(adminAuthFile)) {
+      console.log(chalk.gray('🔐 Checking admin session...'));
+      const adminValid = await refreshAuthIfNeeded(adminAuthFile, baseUrl);
+      if (adminValid) {
+        console.log(chalk.green('  ✓ Admin session valid'));
+        hasValidAuth = true;
+      } else {
+        console.log(chalk.yellow('  ⚠️  Admin session expired'));
+      }
+    }
+
+    // Check user session
+    if (fs.existsSync(userAuthFile)) {
+      console.log(chalk.gray('👤 Checking user session...'));
+      const userValid = await refreshAuthIfNeeded(userAuthFile, baseUrl);
+      if (userValid) {
+        console.log(chalk.green('  ✓ User session valid'));
+        hasValidAuth = true;
+      } else {
+        console.log(chalk.yellow('  ⚠️  User session expired'));
+      }
+    }
+
+    // If no auth files exist at all
+    if (!fs.existsSync(adminAuthFile) && !fs.existsSync(userAuthFile)) {
+      console.log(chalk.yellow('⚠️  No authentication sessions found\n'));
+      const { shouldSetup } = await inquirer.prompt<{ shouldSetup: boolean }>([
+        {
+          type: 'confirm',
+          name: 'shouldSetup',
+          message: 'Would you like to set up authentication now?',
+          default: true,
+        },
+      ]);
+
+      if (shouldSetup) {
+        console.log(chalk.cyan('\n📝 Please run one of these commands to authenticate:\n'));
+        console.log(chalk.cyan('  make auth-setup-admin  - Login as @astromind.com admin'));
+        console.log(chalk.cyan('  make auth-setup-user   - Login as regular user\n'));
+        return false;
+      } else {
+        console.log(chalk.red('Cannot run tests without authentication\n'));
+        return false;
+      }
+    }
+
+    // If auth exists but is invalid
+    if (!hasValidAuth) {
+      console.log(chalk.yellow('\n⚠️  Authentication sessions expired and could not be refreshed\n'));
+      const { shouldReauth } = await inquirer.prompt<{ shouldReauth: boolean }>([
+        {
+          type: 'confirm',
+          name: 'shouldReauth',
+          message: 'Would you like to re-authenticate now?',
+          default: true,
+        },
+      ]);
+
+      if (shouldReauth) {
+        console.log(chalk.cyan('\n📝 Please run one of these commands to re-authenticate:\n'));
+        console.log(chalk.cyan('  make auth-setup-admin  - Re-login as admin'));
+        console.log(chalk.cyan('  make auth-setup-user   - Re-login as user\n'));
+        return false;
+      } else {
+        console.log(chalk.red('Cannot run tests with expired authentication\n'));
+        return false;
+      }
+    }
+
+    console.log(chalk.green('\n✅ Authentication verified\n'));
+    return true;
+  }
+
+  /**
+   * Get base URL for environment
+   */
+  private async getBaseUrl(environment: Environment): Promise<string> {
+    try {
+      const configPath = path.resolve(`./config/environments/${environment}.json`);
+      const configFile = fs.readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(configFile);
+      return config.baseUrls.web;
+    } catch {
+      return 'http://localhost:3000';
+    }
   }
 }
 
