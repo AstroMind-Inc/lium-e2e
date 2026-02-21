@@ -5,14 +5,14 @@
  * Main entry point for the interactive CLI
  */
 
-import chalk from 'chalk';
-import ora from 'ora';
-import { cliPrompts } from './prompts.js';
-import { resultsViewer } from './results-viewer.js';
-import { testRunner } from './test-runner.js';
-import { credentialManager } from '../../shared/credentials/credential-manager.js';
-import { envSelector } from '../../shared/environment/env-selector.js';
-import type { Environment, Pillar } from '../../shared/types/index.js';
+import chalk from "chalk";
+import ora from "ora";
+import { cliPrompts } from "./prompts.js";
+import { resultsViewer } from "./results-viewer.js";
+import { testRunner } from "./test-runner.js";
+import { credentialManager } from "../../shared/credentials/credential-manager.js";
+import { envSelector } from "../../shared/environment/env-selector.js";
+import type { Environment, Pillar } from "../../shared/types/index.js";
 
 class LiumCLI {
   /**
@@ -21,12 +21,12 @@ class LiumCLI {
   private displayBanner(): void {
     console.clear();
     console.log();
-    console.log(chalk.cyan('  ╦  ╦╦ ╦╔╦╗  ') + chalk.magenta('╔═╗╔═╗╔═╗'));
-    console.log(chalk.cyan('  ║  ║║ ║║║║  ') + chalk.magenta('║╣ ╔═╝║╣ '));
-    console.log(chalk.cyan('  ╩═╝╩╚═╝╩ ╩  ') + chalk.magenta('╚═╝╚═╝╚═╝'));
+    console.log(chalk.cyan("  ╦  ╦╦ ╦╔╦╗  ") + chalk.magenta("╔═╗╔═╗╔═╗"));
+    console.log(chalk.cyan("  ║  ║║ ║║║║  ") + chalk.magenta("║╣ ╔═╝║╣ "));
+    console.log(chalk.cyan("  ╩═╝╩╚═╝╩ ╩  ") + chalk.magenta("╚═╝╚═╝╚═╝"));
     console.log();
-    console.log(chalk.gray('  End-to-End Testing Framework'));
-    console.log(chalk.gray('  ─────────────────────────────'));
+    console.log(chalk.gray("  End-to-End Testing Framework"));
+    console.log(chalk.gray("  ─────────────────────────────"));
     console.log();
   }
 
@@ -56,31 +56,31 @@ class LiumCLI {
 
     try {
       switch (command) {
-        case 'setup-credentials':
+        case "setup-credentials":
           await this.setupCredentialsCommand();
           break;
 
-        case 'run':
+        case "run":
           await this.runTestsCommand(args.slice(1));
           break;
 
-        case 'view-results':
+        case "view-results":
           await this.viewResultsCommand();
           break;
 
-        case '--help':
-        case '-h':
+        case "--help":
+        case "-h":
           this.displayHelp();
           break;
 
-        case '--version':
-        case '-v':
+        case "--version":
+        case "-v":
           this.displayVersion();
           break;
 
         default:
           console.log(chalk.red(`Unknown command: ${command}`));
-          console.log(chalk.gray('Run with --help for usage information'));
+          console.log(chalk.gray("Run with --help for usage information"));
           process.exit(1);
       }
     } catch (error) {
@@ -100,22 +100,24 @@ class LiumCLI {
         const action = await cliPrompts.promptForMainAction();
 
         switch (action) {
-          case 'run':
+          case "run":
             await this.runTestsInteractive();
             break;
 
-          case 'results':
+          case "results":
             await this.openHtmlReport();
             break;
 
-          case 'exit':
+          case "exit":
             running = false;
-            console.log(chalk.cyan('\n👋 Goodbye!\n'));
+            console.log(chalk.cyan("\n👋 Goodbye!\n"));
             break;
         }
       } catch (error) {
         if ((error as any).isTtyError) {
-          console.error(chalk.red('Prompt could not be rendered in this environment'));
+          console.error(
+            chalk.red("Prompt could not be rendered in this environment"),
+          );
           process.exit(1);
         } else {
           console.error(chalk.red(`\n❌ Error: ${(error as Error).message}\n`));
@@ -136,11 +138,11 @@ class LiumCLI {
     if (hasExisting) {
       const overwrite = await cliPrompts.confirm(
         `Credentials already exist for ${environment}. Overwrite?`,
-        false
+        false,
       );
 
       if (!overwrite) {
-        console.log(chalk.yellow('Cancelled'));
+        console.log(chalk.yellow("Cancelled"));
         return;
       }
     }
@@ -152,17 +154,23 @@ class LiumCLI {
     const elevated = await cliPrompts.promptForElevatedCredentials(environment);
 
     // Save credentials
-    const spinner = ora('Saving credentials...').start();
+    const spinner = ora("Saving credentials...").start();
 
     try {
-      await credentialManager.saveCredentials(environment, regular, elevated || undefined);
-      spinner.succeed(chalk.green('✓ Credentials saved successfully'));
+      await credentialManager.saveCredentials(
+        environment,
+        regular,
+        elevated || undefined,
+      );
+      spinner.succeed(chalk.green("✓ Credentials saved successfully"));
 
       console.log(
-        chalk.gray(`\n  Stored in: ./credentials/${environment}.json (gitignored)`)
+        chalk.gray(
+          `\n  Stored in: ./credentials/${environment}.json (gitignored)`,
+        ),
       );
     } catch (error) {
-      spinner.fail(chalk.red('Failed to save credentials'));
+      spinner.fail(chalk.red("Failed to save credentials"));
       throw error;
     }
   }
@@ -180,16 +188,11 @@ class LiumCLI {
   private async runTestsInteractive(): Promise<void> {
     const pillar = await cliPrompts.promptForPillar();
 
-    // For synthetic and integration tests, ask which module to test
-    let module: string | null | 'back' = null;
-    if (pillar === 'synthetic') {
-      module = await cliPrompts.promptForModule();
-    } else if (pillar === 'integration') {
-      module = await cliPrompts.promptForIntegrationModule();
-    }
+    // Ask which module to test (works for all pillars)
+    const module = await cliPrompts.promptForModule(pillar);
 
     // Handle "Back" selection
-    if (module === 'back') {
+    if (module === "back") {
       return this.runTestsInteractive(); // Restart selection
     }
 
@@ -199,17 +202,19 @@ class LiumCLI {
     const hasCredentials = credentialManager.hasCredentials(environment);
 
     if (!hasCredentials) {
-      console.log(chalk.yellow(`\n⚠️  No credentials found for ${environment}\n`));
+      console.log(
+        chalk.yellow(`\n⚠️  No credentials found for ${environment}\n`),
+      );
       const shouldSetup = await cliPrompts.confirm(
-        'Would you like to set up credentials now?',
-        true
+        "Would you like to set up credentials now?",
+        true,
       );
 
       if (shouldSetup) {
         await this.setupCredentialsInteractive();
         console.log();
       } else {
-        console.log(chalk.red('Cannot run tests without credentials\n'));
+        console.log(chalk.red("Cannot run tests without credentials\n"));
         return;
       }
     }
@@ -218,7 +223,9 @@ class LiumCLI {
     try {
       await envSelector.loadEnvironment(environment);
     } catch (error) {
-      console.log(chalk.red(`\n❌ Environment config not found for: ${environment}\n`));
+      console.log(
+        chalk.red(`\n❌ Environment config not found for: ${environment}\n`),
+      );
       return;
     }
 
@@ -230,7 +237,9 @@ class LiumCLI {
         module: module || undefined,
       });
     } catch (error) {
-      console.error(chalk.red(`\n❌ Test execution failed: ${(error as Error).message}\n`));
+      console.error(
+        chalk.red(`\n❌ Test execution failed: ${(error as Error).message}\n`),
+      );
     }
   }
 
@@ -239,19 +248,19 @@ class LiumCLI {
    */
   private async runTestsCommand(args: string[]): Promise<void> {
     // Parse arguments
-    const pillarArg = args.find(arg => arg.startsWith('--pillar='));
-    const envArg = args.find(arg => arg.startsWith('--environment='));
+    const pillarArg = args.find((arg) => arg.startsWith("--pillar="));
+    const envArg = args.find((arg) => arg.startsWith("--environment="));
 
     if (pillarArg && envArg) {
-      const pillar = pillarArg.split('=')[1] as Pillar;
-      const environment = envArg.split('=')[1] as Environment;
+      const pillar = pillarArg.split("=")[1] as Pillar;
+      const environment = envArg.split("=")[1] as Environment;
 
       // Check credentials
       const hasCredentials = credentialManager.hasCredentials(environment);
 
       if (!hasCredentials) {
         console.log(chalk.red(`\n❌ No credentials found for ${environment}`));
-        console.log(chalk.gray('Run: npm run cli setup-credentials\n'));
+        console.log(chalk.gray("Run: npm run cli setup-credentials\n"));
         process.exit(1);
       }
 
@@ -262,7 +271,11 @@ class LiumCLI {
           environment,
         });
       } catch (error) {
-        console.error(chalk.red(`\n❌ Test execution failed: ${(error as Error).message}\n`));
+        console.error(
+          chalk.red(
+            `\n❌ Test execution failed: ${(error as Error).message}\n`,
+          ),
+        );
         process.exit(1);
       }
 
@@ -277,31 +290,37 @@ class LiumCLI {
    * Open HTML report
    */
   private async openHtmlReport(): Promise<void> {
-    console.log(chalk.cyan('\n📊 Opening interactive test report...\n'));
+    console.log(chalk.cyan("\n📊 Opening interactive test report...\n"));
 
-    const { spawn } = await import('child_process');
+    const { spawn } = await import("child_process");
 
-    const reportProcess = spawn('npx', ['playwright', 'show-report', 'playwright-report'], {
-      stdio: 'inherit',
-    });
+    const reportProcess = spawn(
+      "npx",
+      ["playwright", "show-report", "playwright-report"],
+      {
+        stdio: "inherit",
+      },
+    );
 
     await new Promise<void>((resolve, reject) => {
-      reportProcess.on('close', (code) => {
+      reportProcess.on("close", (code) => {
         if (code === 0) {
           resolve();
         } else if (code === 1) {
-          console.log(chalk.yellow('\n⚠️  No test report found.'));
-          console.log(chalk.gray('Run some tests first:\n'));
-          console.log(chalk.cyan('  make test-basic    # Run basic tests'));
-          console.log(chalk.cyan('  make test-auth     # Run auth tests'));
-          console.log(chalk.cyan('  make test          # Interactive test runner\n'));
+          console.log(chalk.yellow("\n⚠️  No test report found."));
+          console.log(chalk.gray("Run some tests first:\n"));
+          console.log(chalk.cyan("  make test-basic    # Run basic tests"));
+          console.log(chalk.cyan("  make test-auth     # Run auth tests"));
+          console.log(
+            chalk.cyan("  make test          # Interactive test runner\n"),
+          );
           resolve();
         } else {
           reject(new Error(`Report viewer exited with code ${code}`));
         }
       });
 
-      reportProcess.on('error', (error) => {
+      reportProcess.on("error", (error) => {
         reject(error);
       });
     });
@@ -313,13 +332,13 @@ class LiumCLI {
   private async viewResultsInteractive(): Promise<void> {
     const days = await cliPrompts.promptForResultsDays();
 
-    const spinner = ora('Loading results...').start();
+    const spinner = ora("Loading results...").start();
 
     try {
       spinner.stop();
       await resultsViewer.displaySummary(days);
     } catch (error) {
-      spinner.fail(chalk.red('Failed to load results'));
+      spinner.fail(chalk.red("Failed to load results"));
       throw error;
     }
   }
@@ -335,21 +354,23 @@ class LiumCLI {
    * Display help
    */
   private displayHelp(): void {
-    console.log(chalk.bold('\nLium E2E Testing Framework - CLI'));
-    console.log(chalk.gray('━'.repeat(50)));
-    console.log('\nUsage:');
-    console.log('  npm run cli [command] [options]');
-    console.log('\nCommands:');
-    console.log('  setup-credentials    Setup credentials for an environment');
-    console.log('  run                  Run tests (interactive or with options)');
-    console.log('  view-results         View test results');
-    console.log('\nOptions:');
-    console.log('  --help, -h          Show this help message');
-    console.log('  --version, -v       Show version');
-    console.log('\nExamples:');
-    console.log('  npm run cli');
-    console.log('  npm run cli setup-credentials');
-    console.log('  npm run cli view-results');
+    console.log(chalk.bold("\nLium E2E Testing Framework - CLI"));
+    console.log(chalk.gray("━".repeat(50)));
+    console.log("\nUsage:");
+    console.log("  npm run cli [command] [options]");
+    console.log("\nCommands:");
+    console.log("  setup-credentials    Setup credentials for an environment");
+    console.log(
+      "  run                  Run tests (interactive or with options)",
+    );
+    console.log("  view-results         View test results");
+    console.log("\nOptions:");
+    console.log("  --help, -h          Show this help message");
+    console.log("  --version, -v       Show version");
+    console.log("\nExamples:");
+    console.log("  npm run cli");
+    console.log("  npm run cli setup-credentials");
+    console.log("  npm run cli view-results");
     console.log();
   }
 
@@ -357,7 +378,7 @@ class LiumCLI {
    * Display version
    */
   private displayVersion(): void {
-    console.log('Lium E2E Testing Framework v1.0.0');
+    console.log("Lium E2E Testing Framework v1.0.0");
   }
 }
 

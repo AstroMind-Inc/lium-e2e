@@ -35,10 +35,10 @@ export interface Credentials {
 
 export interface TestResult {
   timestamp: string;
-  pillar: 'synthetic' | 'integration' | 'performance';
+  pillar: "synthetic" | "integration" | "performance";
   environment: string;
   test: string;
-  status: 'passed' | 'failed' | 'skipped';
+  status: "passed" | "failed" | "skipped";
   duration: number;
   user: string;
   error?: string;
@@ -86,5 +86,5 @@ export interface TrendData {
   totalTests: number;
 }
 
-export type Environment = 'local' | 'dev' | 'sandbox' | 'staging';
-export type Pillar = 'synthetic' | 'integration' | 'performance';
+export type Environment = "local" | "dev" | "sandbox" | "staging";
+export type Pillar = "synthetic" | "integration" | "performance";

@@ -3,12 +3,12 @@
  * Interactive prompts for user input
  */
 
-import inquirer from 'inquirer';
-import chalk from 'chalk';
-import type { Environment, Pillar } from '../../shared/types/index.js';
-import { envSelector } from '../../shared/environment/env-selector.js';
-import { credentialManager } from '../../shared/credentials/credential-manager.js';
-import { moduleScanner } from '../../shared/test-discovery/module-scanner.js';
+import inquirer from "inquirer";
+import chalk from "chalk";
+import type { Environment, Pillar } from "../../shared/types/index.js";
+import { envSelector } from "../../shared/environment/env-selector.js";
+import { credentialManager } from "../../shared/credentials/credential-manager.js";
+import { moduleScanner } from "../../shared/test-discovery/module-scanner.js";
 
 export class CLIPrompts {
   /**
@@ -17,17 +17,19 @@ export class CLIPrompts {
   async promptForEnvironment(): Promise<Environment> {
     const availableEnvs = await envSelector.getAvailableEnvironments();
 
-    const { environment } = await inquirer.prompt<{ environment: Environment }>([
-      {
-        type: 'list',
-        name: 'environment',
-        message: 'Select environment:',
-        choices: availableEnvs.map(env => ({
-          name: this.formatEnvironmentName(env),
-          value: env,
-        })),
-      },
-    ]);
+    const { environment } = await inquirer.prompt<{ environment: Environment }>(
+      [
+        {
+          type: "list",
+          name: "environment",
+          message: "Select environment:",
+          choices: availableEnvs.map((env) => ({
+            name: this.formatEnvironmentName(env),
+            value: env,
+          })),
+        },
+      ],
+    );
 
     return environment;
   }
@@ -38,21 +40,21 @@ export class CLIPrompts {
   async promptForPillar(): Promise<Pillar> {
     const { pillar } = await inquirer.prompt<{ pillar: Pillar }>([
       {
-        type: 'list',
-        name: 'pillar',
-        message: 'Select test pillar:',
+        type: "list",
+        name: "pillar",
+        message: "Select test pillar:",
         choices: [
           {
-            name: '🌐 Synthetic (Browser Tests)',
-            value: 'synthetic',
+            name: "🌐 Synthetic (Browser Tests)",
+            value: "synthetic",
           },
           {
-            name: '🔗 Integration (API Tests)',
-            value: 'integration',
+            name: "🔗 Integration (API Tests)",
+            value: "integration",
           },
           {
-            name: '⚡ Performance (Load Tests)',
-            value: 'performance',
+            name: "⚡ Performance (Load Tests)",
+            value: "performance",
           },
         ],
       },
@@ -62,101 +64,80 @@ export class CLIPrompts {
   }
 
   /**
-   * Prompt for test module selection (for synthetic tests)
+   * Prompt for test module selection (works for all pillars)
    * Auto-discovers modules from filesystem
    */
-  async promptForModule(): Promise<string | null | 'back'> {
+  async promptForModule(pillar: Pillar): Promise<string | null | "back"> {
     // Scan for available modules
-    const modules = await moduleScanner.scanModules('synthetic');
+    const modules = await moduleScanner.scanModules(pillar);
+
+    // Pillar-specific labels
+    const labels: Record<Pillar, { all: string; message: string }> = {
+      synthetic: {
+        all: "🎯 All Modules (complete test suite)",
+        message: "Select test module:",
+      },
+      integration: {
+        all: "🎯 All APIs (complete test suite)",
+        message: "Select API module:",
+      },
+      performance: {
+        all: "🎯 All Performance Tests (complete suite)",
+        message: "Select performance test:",
+      },
+    };
 
     // Build choices dynamically
     const choices = [
       {
-        name: '🎯 All Modules (complete test suite)',
-        value: 'all',
+        name: labels[pillar].all,
+        value: "all",
       },
       {
-        name: '⬅️  Back to pillar selection',
-        value: 'back',
+        name: "⬅️  Back to pillar selection",
+        value: "back",
       },
       {
-        name: '━'.repeat(40),
+        name: "━".repeat(40),
         disabled: true,
       },
     ];
 
-    // Add discovered modules (show count)
+    // Add discovered modules (show count and tags)
     for (const module of modules) {
-      const icon = moduleScanner.getModuleIcon(module.name);
-      const countStr = module.testCount === 0
-        ? chalk.gray(`(0 tests)`)
-        : chalk.cyan(`(${module.testCount} test${module.testCount > 1 ? 's' : ''})`);
+      // For performance, don't show test count (just file count)
+      const countStr =
+        pillar === "performance"
+          ? ""
+          : module.testCount === 0
+            ? chalk.gray(`(0 tests)`)
+            : chalk.cyan(
+                `(${module.testCount} test${module.testCount > 1 ? "s" : ""})`,
+              );
+
+      // Show tags if present
+      const tagsStr =
+        module.tags.length > 0
+          ? chalk.gray(` [${module.tags.join(", ")}]`)
+          : "";
+
       choices.push({
-        name: `${icon} ${module.displayName} ${countStr} - ${module.description}`,
+        name: `${module.icon} ${module.displayName} ${countStr}${tagsStr} - ${module.description}`,
         value: module.name,
       });
     }
 
     const { module } = await inquirer.prompt<{ module: string }>([
       {
-        type: 'list',
-        name: 'module',
-        message: 'Select test module:',
+        type: "list",
+        name: "module",
+        message: labels[pillar].message,
         choices,
       },
     ]);
 
-    if (module === 'back') return 'back';
-    return module === 'all' ? null : module;
-  }
-
-  /**
-   * Prompt for integration test module selection
-   * Auto-discovers modules from filesystem
-   */
-  async promptForIntegrationModule(): Promise<string | null | 'back'> {
-    // Scan for available modules
-    const modules = await moduleScanner.scanModules('integration');
-
-    // Build choices dynamically
-    const choices = [
-      {
-        name: '🎯 All APIs (complete test suite)',
-        value: 'all',
-      },
-      {
-        name: '⬅️  Back to pillar selection',
-        value: 'back',
-      },
-      {
-        name: '━'.repeat(40),
-        disabled: true,
-      },
-    ];
-
-    // Add discovered modules (show count)
-    for (const module of modules) {
-      const icon = moduleScanner.getModuleIcon(module.name);
-      const countStr = module.testCount === 0
-        ? chalk.gray(`(0 tests)`)
-        : chalk.cyan(`(${module.testCount} test${module.testCount > 1 ? 's' : ''})`);
-      choices.push({
-        name: `${icon} ${module.displayName} ${countStr} - ${module.description}`,
-        value: module.name,
-      });
-    }
-
-    const { module } = await inquirer.prompt<{ module: string }>([
-      {
-        type: 'list',
-        name: 'module',
-        message: 'Select API module:',
-        choices,
-      },
-    ]);
-
-    if (module === 'back') return 'back';
-    return module === 'all' ? null : module;
+    if (module === "back") return "back";
+    return module === "all" ? null : module;
   }
 
   /**
@@ -167,37 +148,39 @@ export class CLIPrompts {
     password: string;
     auth0ClientId?: string;
   }> {
-    console.log(`\n🔐 Setup credentials for: ${this.formatEnvironmentName(environment)}`);
-    console.log('━'.repeat(50));
+    console.log(
+      `\n🔐 Setup credentials for: ${this.formatEnvironmentName(environment)}`,
+    );
+    console.log("━".repeat(50));
 
     const answers = await inquirer.prompt([
       {
-        type: 'input',
-        name: 'username',
-        message: 'Username/Email:',
+        type: "input",
+        name: "username",
+        message: "Username/Email:",
         validate: (input: string) => {
           if (!input || input.trim().length === 0) {
-            return 'Username is required';
+            return "Username is required";
           }
           return true;
         },
       },
       {
-        type: 'password',
-        name: 'password',
-        message: 'Password:',
-        mask: '*',
+        type: "password",
+        name: "password",
+        message: "Password:",
+        mask: "*",
         validate: (input: string) => {
           if (!input || input.trim().length === 0) {
-            return 'Password is required';
+            return "Password is required";
           }
           return true;
         },
       },
       {
-        type: 'input',
-        name: 'auth0ClientId',
-        message: 'Auth0 Client ID (optional):',
+        type: "input",
+        name: "auth0ClientId",
+        message: "Auth0 Client ID (optional):",
       },
     ]);
 
@@ -213,9 +196,9 @@ export class CLIPrompts {
   } | null> {
     const { needElevated } = await inquirer.prompt<{ needElevated: boolean }>([
       {
-        type: 'confirm',
-        name: 'needElevated',
-        message: 'Setup elevated/admin credentials?',
+        type: "confirm",
+        name: "needElevated",
+        message: "Setup elevated/admin credentials?",
         default: false,
       },
     ]);
@@ -224,29 +207,31 @@ export class CLIPrompts {
       return null;
     }
 
-    console.log(`\n🔑 Setup elevated credentials for: ${this.formatEnvironmentName(environment)}`);
-    console.log('━'.repeat(50));
+    console.log(
+      `\n🔑 Setup elevated credentials for: ${this.formatEnvironmentName(environment)}`,
+    );
+    console.log("━".repeat(50));
 
     const answers = await inquirer.prompt([
       {
-        type: 'input',
-        name: 'username',
-        message: 'Admin Username/Email:',
+        type: "input",
+        name: "username",
+        message: "Admin Username/Email:",
         validate: (input: string) => {
           if (!input || input.trim().length === 0) {
-            return 'Username is required';
+            return "Username is required";
           }
           return true;
         },
       },
       {
-        type: 'password',
-        name: 'password',
-        message: 'Admin Password:',
-        mask: '*',
+        type: "password",
+        name: "password",
+        message: "Admin Password:",
+        mask: "*",
         validate: (input: string) => {
           if (!input || input.trim().length === 0) {
-            return 'Password is required';
+            return "Password is required";
           }
           return true;
         },
@@ -259,7 +244,9 @@ export class CLIPrompts {
   /**
    * Ask if user wants to use saved credentials
    */
-  async promptToUseSavedCredentials(environment: Environment): Promise<boolean> {
+  async promptToUseSavedCredentials(
+    environment: Environment,
+  ): Promise<boolean> {
     const hasCreds = await credentialManager.hasCredentials(environment);
 
     if (!hasCreds) {
@@ -268,8 +255,8 @@ export class CLIPrompts {
 
     const { useSaved } = await inquirer.prompt<{ useSaved: boolean }>([
       {
-        type: 'confirm',
-        name: 'useSaved',
+        type: "confirm",
+        name: "useSaved",
         message: `Use saved credentials for ${this.formatEnvironmentName(environment)}?`,
         default: true,
       },
@@ -281,11 +268,14 @@ export class CLIPrompts {
   /**
    * Confirm action
    */
-  async confirm(message: string, defaultValue: boolean = true): Promise<boolean> {
+  async confirm(
+    message: string,
+    defaultValue: boolean = true,
+  ): Promise<boolean> {
     const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
       {
-        type: 'confirm',
-        name: 'confirmed',
+        type: "confirm",
+        name: "confirmed",
         message,
         default: defaultValue,
       },
@@ -297,26 +287,26 @@ export class CLIPrompts {
   /**
    * Prompt for main menu action
    */
-  async promptForMainAction(): Promise<'run' | 'results' | 'exit'> {
+  async promptForMainAction(): Promise<"run" | "results" | "exit"> {
     const { action } = await inquirer.prompt<{
-      action: 'run' | 'results' | 'exit';
+      action: "run" | "results" | "exit";
     }>([
       {
-        type: 'list',
-        name: 'action',
-        message: 'What would you like to do?',
+        type: "list",
+        name: "action",
+        message: "What would you like to do?",
         choices: [
           {
-            name: '▶️  Run Tests',
-            value: 'run',
+            name: "▶️  Run Tests",
+            value: "run",
           },
           {
-            name: '📊 View Results',
-            value: 'results',
+            name: "📊 View Results",
+            value: "results",
           },
           {
-            name: '❌ Exit',
-            value: 'exit',
+            name: "❌ Exit",
+            value: "exit",
           },
         ],
       },
@@ -331,14 +321,14 @@ export class CLIPrompts {
   async promptForResultsDays(): Promise<number> {
     const { days } = await inquirer.prompt<{ days: string }>([
       {
-        type: 'list',
-        name: 'days',
-        message: 'Show results from:',
+        type: "list",
+        name: "days",
+        message: "Show results from:",
         choices: [
-          { name: 'Last 24 hours', value: '1' },
-          { name: 'Last 7 days', value: '7' },
-          { name: 'Last 30 days', value: '30' },
-          { name: 'All time', value: '365' },
+          { name: "Last 24 hours", value: "1" },
+          { name: "Last 7 days", value: "7" },
+          { name: "Last 30 days", value: "30" },
+          { name: "All time", value: "365" },
         ],
       },
     ]);
@@ -351,10 +341,10 @@ export class CLIPrompts {
    */
   private formatEnvironmentName(env: Environment): string {
     const names: Record<Environment, string> = {
-      local: '🏠 Local',
-      dev: '🔧 Development',
-      sandbox: '🏖️  Sandbox',
-      staging: '🎭 Staging',
+      local: "🏠 Local",
+      dev: "🔧 Development",
+      sandbox: "🏖️  Sandbox",
+      staging: "🎭 Staging",
     };
 
     return names[env] || env;
