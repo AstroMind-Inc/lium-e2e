@@ -33,6 +33,31 @@ That's it! Add test files to any module folder and they're automatically discove
 
 ## ✨ What's New
 
+### Auto-Opening HTML Reports ⭐ NEW
+
+**Tests now automatically open the interactive report when complete!**
+
+```bash
+make test-syn-all   # Runs tests → Opens report automatically
+make test-api-all   # Runs tests → Opens report automatically
+```
+
+No manual steps - just run tests and view rich HTML results with screenshots, traces, and videos.
+
+### Unified Authentication
+
+**One auth setup works for ALL test types!**
+
+```bash
+make auth-setup-admin   # Authenticate once
+
+# Now both work with same session:
+make test-syn-all       # Browser tests ✓
+make test-api-all       # API tests ✓ (uses same cookies)
+```
+
+Integration tests extract auth cookies from saved browser sessions - no duplicate credential management!
+
 ### Auto-Discovery System
 
 **Add a folder → Tests appear automatically**
@@ -53,7 +78,7 @@ No code changes. No config updates. Just works.
 
 Before every test run:
 
-1. 🏥 **Server health check** - Ensures app/API is running
+1. 🏥 **Server health check** - Ensures app/API is running (fails fast if down)
 2. 🔍 **Token validation** - Auto-refreshes expired auth sessions
 3. 🚀 **Tests** - Only runs if checks pass
 
@@ -235,9 +260,12 @@ make preflight           # Run all quality checks (format, lint, test, coverage)
 ### Results
 
 ```bash
-make report              # Open interactive HTML report ⭐
-make results             # CLI summary (future: requires JSONL)
+make report              # Open interactive HTML report (opens automatically after test runs)
+make results             # CLI summary (JSONL - future: automated tracking)
+make results-flaky       # Find flaky tests (future)
 ```
+
+**Note:** HTML reports now open automatically after running `make test-syn-all` or `make test-api-all`!
 
 ### Cleanup
 

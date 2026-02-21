@@ -12,15 +12,17 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 - [x] **Auto-discoverable test modules** - Add folder → command works
 - [x] **Three-pillar architecture** - Synthetic, Integration, Performance
 - [x] **Saved authentication sessions** - One-time login, reused forever
+- [x] **Unified authentication** - Synthetic and integration tests share auth cookies
 - [x] **Auto-discovery system** - ModuleScanner + pattern rules
-- [x] **Pre-flight checks** - Server health + token validation
-- [x] **Automatic token refresh** - Detects expired tokens, prompts re-auth
+- [x] **Pre-flight checks** - Server health (fail fast) + token validation
+- [x] **Automatic token refresh** - Detects expired tokens, auto-refreshes when possible
+- [x] **Auto-opening HTML reports** - Reports open automatically after test runs
 - [x] **Interactive CLI** - `make test` menu for easy test selection
 - [x] **k6 performance testing** - Advanced scenarios (baseline, spike, stress)
 - [x] **Module metadata (manifest.yml)** - Optional customization for test modules
 - [x] **Tenant management test suite** - Complete member lifecycle testing
 - [x] **UI discovery methodology** - Automated selector discovery and documentation
-- [x] **Consolidated HTML reports** - All tests in single report
+- [x] **Consolidated HTML reports** - All tests in single report with screenshots
 - [x] **Internal framework tests** - 80%+ coverage for critical utilities
 - [x] **Turn-key operation** - `make setup` → `make test` → done
 
@@ -55,39 +57,6 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 3. Enable `make results` CLI command
 
 **Estimated Effort**: 2-4 hours
-
----
-
-### 2. **Screenshot Visibility in Reports**
-
-**Status**: 🔴 Not Working
-**Priority**: **HIGH** ⚠️
-**Assignee**: **URGENT**
-
-**Problem**: Screenshots not visible in HTML reports
-
-**Current Behavior:**
-
-- Screenshots taken (`screenshot: 'on'` in config)
-- But only kept for FAILED tests (Playwright default)
-- Passing tests → artifacts cleaned up → no screenshots in report
-- Report shows tests but no visual artifacts
-
-**Goal**: See screenshots for ALL tests (passed + failed)
-
-**Options:**
-
-1. **Custom reporter** - Attach screenshots as base64 to HTML
-2. **Force artifact retention** - Configure Playwright to keep all artifacts
-3. **Manual attachment** - Use `test.info().attach()` in tests
-
-**Next Steps:**
-
-1. Investigate Playwright artifact retention settings
-2. Implement custom attachment strategy
-3. Test with passing AND failing tests
-
-**Estimated Effort**: 2-3 hours
 
 ---
 
@@ -329,12 +298,15 @@ _No critical bugs at this time._
 - ✅ 10+ test modules across 3 pillars
 - ✅ Auto-discovery system working
 - ✅ Saved auth sessions (headless tests)
-- ✅ Pre-flight checks (server health + tokens)
+- ✅ Unified authentication (browser + API tests)
+- ✅ Pre-flight checks (server health + token auto-refresh)
+- ✅ Auto-opening HTML reports
 - ✅ 80%+ internal framework test coverage
 - ✅ Module metadata via manifest.yml
 - ✅ Advanced performance testing (baseline, spike, stress)
 - ✅ Tenant management test suite
 - ✅ UI discovery methodology
+- ✅ All integration tests passing (8/8 health checks)
 
 **Goals (v1.5):**
 
