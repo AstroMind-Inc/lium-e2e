@@ -4,6 +4,14 @@
  */
 
 import { defineConfig } from '@playwright/test';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Resolve reporter path
+const jsonlReporterPath = path.resolve(__dirname, '../shared/reporting/jsonl-reporter.ts');
 
 export default defineConfig({
   testDir: './tests',
@@ -25,6 +33,7 @@ export default defineConfig({
     ['html', { outputFolder: '../reports/playwright-api-report', open: 'never' }],
     ['list'],
     ['junit', { outputFile: '../reports/junit-api-results.xml' }],
+    [jsonlReporterPath], // JSONL for historical tracking
   ],
 
   // Shared settings for all the projects below

@@ -4,9 +4,12 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import type { Reporter, TestCase, TestResult as PlaywrightTestResult } from '@playwright/test/reporter';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { resultWriter } from '../shared/results/result-writer.js';
+import * as os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +17,46 @@ const __dirname = path.dirname(__filename);
 // Check if saved auth exists
 const adminAuthPath = path.resolve(__dirname, '../playwright/.auth/admin.json');
 const hasAdminAuth = fs.existsSync(adminAuthPath);
+
+// Inline JSONL Reporter to avoid module loading issues
+class JSONLReporter implements Reporter {
+  async onTestEnd(test: TestCase, result: PlaywrightTestResult) {
+    console.log('[JSONL Reporter] onTestEnd called for:', test.title);
+    try {
+      const pillar = test.location.file.includes('/synthetic/') ? 'synthetic' : 'integration';
+      const environment = (process.env.TEST_ENV || 'local') as any;
+      const testTitle = test.titlePath().slice(1).join(' › ');
+      const testFile = test.location.file.split(`/${pillar}/tests/`)[1]?.replace(/\.spec\.ts$/, '') || path.basename(test.location.file, '.spec.ts');
+
+      let status: 'passed' | 'failed' | 'skipped';
+      if (result.status === 'passed') status = 'passed';
+      else if (result.status === 'skipped') status = 'skipped';
+      else status = 'failed';
+
+      const screenshot = result.attachments.find(a => a.name === 'screenshot' || a.contentType?.startsWith('image/'))?.path;
+      const trace = result.attachments.find(a => a.name === 'trace' || a.contentType?.includes('zip'))?.path;
+
+      await resultWriter.writeResult({
+        timestamp: new Date().toISOString(),
+        pillar,
+        environment,
+        test: `${testFile} › ${testTitle}`,
+        status,
+        duration: result.duration,
+        user: process.env.USER || os.userInfo().username || 'unknown',
+        error: result.error?.message,
+        screenshot,
+        trace,
+        metadata: {
+          browser: test.parent.project()?.name,
+          retries: result.retry,
+        },
+      });
+    } catch (error) {
+      console.warn(`[JSONL Reporter] Failed to write result: ${(error as Error).message}`);
+    }
+  }
+}
 
 export default defineConfig({
   testDir: './tests',
@@ -38,6 +81,45 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
     ['junit', { outputFile: 'reports/junit-results.xml' }],
+    // JSONL reporter (inline object to avoid module loading issues)
+    [{
+      async onTestEnd(test: TestCase, result: PlaywrightTestResult) {
+        console.log('[JSONL Reporter] onTestEnd called for:', test.title);
+        try {
+          const pillar = test.location.file.includes('/synthetic/') ? 'synthetic' : 'integration';
+          const environment = (process.env.TEST_ENV || 'local') as any;
+          const testTitle = test.titlePath().slice(1).join(' › ');
+          const testFile = test.location.file.split(`/${pillar}/tests/`)[1]?.replace(/\.spec\.ts$/, '') || path.basename(test.location.file, '.spec.ts');
+
+          let status: 'passed' | 'failed' | 'skipped';
+          if (result.status === 'passed') status = 'passed';
+          else if (result.status === 'skipped') status = 'skipped';
+          else status = 'failed';
+
+          const screenshot = result.attachments.find(a => a.name === 'screenshot' || a.contentType?.startsWith('image/'))?.path;
+          const trace = result.attachments.find(a => a.name === 'trace' || a.contentType?.includes('zip'))?.path;
+
+          await resultWriter.writeResult({
+            timestamp: new Date().toISOString(),
+            pillar,
+            environment,
+            test: `${testFile} › ${testTitle}`,
+            status,
+            duration: result.duration,
+            user: process.env.USER || os.userInfo().username || 'unknown',
+            error: result.error?.message,
+            screenshot,
+            trace,
+            metadata: {
+              browser: test.parent.project()?.name,
+              retries: result.retry,
+            },
+          });
+        } catch (error) {
+          console.warn(`[JSONL Reporter] Failed to write result: ${(error as Error).message}`);
+        }
+      }
+    }],
   ],
 
   // Shared settings for all the projects below
