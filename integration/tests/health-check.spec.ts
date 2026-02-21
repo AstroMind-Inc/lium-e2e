@@ -84,8 +84,8 @@ test.describe("Health Check - Error Handling", () => {
     const body = await response.json().catch(() => null);
 
     if (body) {
-      // Check for error message
-      expect(body.error || body.message || body.statusCode).toBeDefined();
+      // Check for error message (FastAPI uses "detail" for errors)
+      expect(body.detail || body.error || body.message).toBeDefined();
     }
   });
 });
