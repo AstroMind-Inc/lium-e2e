@@ -18,8 +18,8 @@ const hasAdminAuth = fs.existsSync(adminAuthPath);
 export default defineConfig({
   testDir: './tests',
 
-  // Ignore example and future tests
-  testIgnore: ['**/_examples/**', '**/_future/**', '**/user-flows/multi-user-flow.spec.ts'],
+  // Note: Example and manual tests use .spec.ts.skip extension (won't run)
+  // _examples/, _future/, and multi-user-flow.spec.ts.skip are skipped
 
   // Run tests in files in parallel
   fullyParallel: true,
