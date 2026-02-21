@@ -3,11 +3,14 @@
  * Provides environment, credentials, and auth helpers to tests
  */
 
-import { test as base } from '@playwright/test';
-import { envSelector } from '../../shared/environment/env-selector.js';
-import { credentialManager } from '../../shared/credentials/credential-manager.js';
-import { Auth0Helper } from '../../shared/auth/auth0-helper.js';
-import type { Environment, EnvironmentConfig } from '../../shared/types/index.js';
+import { test as base } from "@playwright/test";
+import { envSelector } from "../../shared/environment/env-selector.js";
+import { credentialManager } from "../../shared/credentials/credential-manager.js";
+import { Auth0Helper } from "../../shared/auth/auth0-helper.js";
+import type {
+  Environment,
+  EnvironmentConfig,
+} from "../../shared/types/index.js";
 
 // Extend base test with custom fixtures
 type CustomFixtures = {
@@ -26,7 +29,7 @@ export const test = base.extend<CustomFixtures>({
   // Environment fixture
   environment: async ({}, use) => {
     // Get environment from env variable or default to 'local'
-    const env = (process.env.E2E_ENVIRONMENT as Environment) || 'local';
+    const env = (process.env.E2E_ENVIRONMENT as Environment) || "local";
     await use(env);
   },
 
@@ -46,11 +49,13 @@ export const test = base.extend<CustomFixtures>({
     } catch (error) {
       // If credentials don't exist, provide empty credentials
       // Tests using saved auth states don't need credentials
-      console.warn('[Fixture] No credentials found - tests will use saved auth state');
+      console.warn(
+        "[Fixture] No credentials found - tests will use saved auth state",
+      );
       await use({
-        username: '',
-        password: '',
-        auth0ClientId: '',
+        username: "",
+        password: "",
+        auth0ClientId: "",
       });
     }
   },
@@ -81,7 +86,7 @@ export const test = base.extend<CustomFixtures>({
   },
 });
 
-export { expect } from '@playwright/test';
+export { expect } from "@playwright/test";
 
 // Global afterEach hook to FORCE screenshot attachment for ALL tests (even passing ones)
 // This ensures screenshots appear in HTML reports for all tests
@@ -89,22 +94,24 @@ test.afterEach(async ({ page }, testInfo) => {
   console.log(`[Screenshot Hook] Running for test: ${testInfo.title}`);
 
   if (!page) {
-    console.log('[Screenshot Hook] No page object - skipping');
+    console.log("[Screenshot Hook] No page object - skipping");
     return;
   }
 
   try {
     // Take screenshot
     const screenshot = await page.screenshot({ fullPage: true });
-    console.log(`[Screenshot Hook] Screenshot captured (${screenshot.length} bytes)`);
+    console.log(
+      `[Screenshot Hook] Screenshot captured (${screenshot.length} bytes)`,
+    );
 
     // Attach to test info
     await testInfo.attach(`screenshot-${testInfo.status}`, {
       body: screenshot,
-      contentType: 'image/png',
+      contentType: "image/png",
     });
 
-    console.log('[Screenshot Hook] Screenshot attached to test report');
+    console.log("[Screenshot Hook] Screenshot attached to test report");
   } catch (error) {
     console.log(`[Screenshot Hook] Error: ${(error as Error).message}`);
   }

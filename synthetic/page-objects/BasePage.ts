@@ -3,8 +3,8 @@
  * Base class for all page objects with common functionality
  */
 
-import type { Page, Locator } from '@playwright/test';
-import type { EnvironmentConfig } from '../../shared/types/index.js';
+import type { Page, Locator } from "@playwright/test";
+import type { EnvironmentConfig } from "../../shared/types/index.js";
 
 export class BasePage {
   protected page: Page;
@@ -18,10 +18,10 @@ export class BasePage {
   /**
    * Navigate to a path relative to the base URL
    */
-  async goto(path: string = ''): Promise<void> {
+  async goto(path: string = ""): Promise<void> {
     const url = `${this.envConfig.baseUrls.web}${path}`;
     await this.page.goto(url, {
-      waitUntil: 'networkidle',
+      waitUntil: "networkidle",
       timeout: this.envConfig.timeouts.pageLoad,
     });
   }
@@ -32,7 +32,7 @@ export class BasePage {
   async waitForElement(selector: string, timeout?: number): Promise<Locator> {
     const element = this.page.locator(selector);
     await element.waitFor({
-      state: 'visible',
+      state: "visible",
       timeout: timeout || this.envConfig.timeouts.pageLoad,
     });
     return element;
@@ -66,7 +66,7 @@ export class BasePage {
    * Wait for navigation
    */
   async waitForNavigation(timeout?: number): Promise<void> {
-    await this.page.waitForLoadState('networkidle', {
+    await this.page.waitForLoadState("networkidle", {
       timeout: timeout || this.envConfig.timeouts.pageLoad,
     });
   }
@@ -104,7 +104,7 @@ export class BasePage {
    */
   async getText(selector: string): Promise<string> {
     const element = await this.waitForElement(selector);
-    return (await element.textContent()) || '';
+    return (await element.textContent()) || "";
   }
 
   /**
@@ -119,7 +119,7 @@ export class BasePage {
    */
   async reload(): Promise<void> {
     await this.page.reload({
-      waitUntil: 'networkidle',
+      waitUntil: "networkidle",
     });
   }
 
@@ -128,7 +128,7 @@ export class BasePage {
    */
   async goBack(): Promise<void> {
     await this.page.goBack({
-      waitUntil: 'networkidle',
+      waitUntil: "networkidle",
     });
   }
 

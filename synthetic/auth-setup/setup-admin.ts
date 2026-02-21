@@ -7,30 +7,34 @@
  * Run with: make auth-setup-admin
  */
 
-import { chromium, type FullConfig } from '@playwright/test';
-import * as path from 'path';
-import * as fs from 'fs';
-import { fileURLToPath } from 'url';
+import { chromium, type FullConfig } from "@playwright/test";
+import * as path from "path";
+import * as fs from "fs";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function setupAdmin(config: FullConfig) {
-  const authDir = path.join(__dirname, '../../playwright/.auth');
-  const authFile = path.join(authDir, 'admin.json');
+  const authDir = path.join(__dirname, "../../playwright/.auth");
+  const authFile = path.join(authDir, "admin.json");
 
   // Ensure directory exists
   if (!fs.existsSync(authDir)) {
     fs.mkdirSync(authDir, { recursive: true });
   }
 
-  console.log('\n' + '='.repeat(70));
-  console.log('🔐 ADMIN AUTHENTICATION SETUP');
-  console.log('='.repeat(70));
-  console.log('\nThis will open a browser window for you to log in.');
-  console.log('Please sign in with an @astromind.com account via Google OAuth.');
-  console.log('\nOnce authenticated, your session will be saved and reused for all tests.');
-  console.log('Tests will then run HEADLESS for maximum speed.\n');
+  console.log("\n" + "=".repeat(70));
+  console.log("🔐 ADMIN AUTHENTICATION SETUP");
+  console.log("=".repeat(70));
+  console.log("\nThis will open a browser window for you to log in.");
+  console.log(
+    "Please sign in with an @astromind.com account via Google OAuth.",
+  );
+  console.log(
+    "\nOnce authenticated, your session will be saved and reused for all tests.",
+  );
+  console.log("Tests will then run HEADLESS for maximum speed.\n");
 
   // Get base URL - try environment variable, then load from config
   let baseUrl = process.env.E2E_BASE_URL;
@@ -38,20 +42,25 @@ async function setupAdmin(config: FullConfig) {
   if (!baseUrl) {
     // Load from local environment config
     try {
-      const configPath = path.join(__dirname, '../../config/environments/local.json');
-      const configFile = fs.readFileSync(configPath, 'utf-8');
+      const configPath = path.join(
+        __dirname,
+        "../../config/environments/local.json",
+      );
+      const configFile = fs.readFileSync(configPath, "utf-8");
       const localConfig = JSON.parse(configFile);
       baseUrl = localConfig.baseUrls.web;
       console.log(`📝 Using URL from local config: ${baseUrl}\n`);
     } catch (error) {
-      baseUrl = 'http://localhost:3000';
+      baseUrl = "http://localhost:3000";
       console.log(`⚠️  Could not load config, using default: ${baseUrl}\n`);
     }
   }
 
   console.log(`📍 Opening: ${baseUrl}`);
-  console.log('⚠️  Make sure your app is running and accessible at this URL!\n');
-  console.log('⏳ Opening browser...\n');
+  console.log(
+    "⚠️  Make sure your app is running and accessible at this URL!\n",
+  );
+  console.log("⏳ Opening browser...\n");
 
   const browser = await chromium.launch({
     headless: false,
@@ -63,12 +72,12 @@ async function setupAdmin(config: FullConfig) {
 
   try {
     // Navigate to app
-    await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
 
     // Inject visible banner
     await page.evaluate(() => {
-      const banner = document.createElement('div');
-      banner.id = 'auth-setup-banner';
+      const banner = document.createElement("div");
+      banner.id = "auth-setup-banner";
       banner.style.cssText = `
         position: fixed;
         top: 0;
@@ -96,21 +105,22 @@ async function setupAdmin(config: FullConfig) {
       document.body.prepend(banner);
     });
 
-    console.log('👉 Please complete the login in the browser window...');
-    console.log('   (Waiting for you to reach /chats...)\n');
+    console.log("👉 Please complete the login in the browser window...");
+    console.log("   (Waiting for you to reach /chats...)\n");
 
     // Wait for successful login (chats URL)
     await page.waitForURL(/.*\/chats.*/, {
       timeout: 600000, // 10 minutes
     });
 
-    console.log('✅ Login successful!\n');
+    console.log("✅ Login successful!\n");
 
     // Update banner to show success
     await page.evaluate(() => {
-      const banner = document.getElementById('auth-setup-banner');
+      const banner = document.getElementById("auth-setup-banner");
       if (banner) {
-        banner.style.background = 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)';
+        banner.style.background =
+          "linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)";
         banner.innerHTML = `
           <div style="font-size: 28px; font-weight: bold;">
             ✅ Authentication Successful
@@ -128,23 +138,29 @@ async function setupAdmin(config: FullConfig) {
     // Save authenticated state
     await context.storageState({ path: authFile });
 
-    console.log('💾 Admin session saved to:', authFile);
-    console.log('✅ All admin tests will now use this authenticated session!');
-    console.log('   Tests will run HEADLESS for maximum speed.\n');
-
+    console.log("💾 Admin session saved to:", authFile);
+    console.log("✅ All admin tests will now use this authenticated session!");
+    console.log("   Tests will run HEADLESS for maximum speed.\n");
   } catch (error) {
-    console.error('\n❌ Authentication failed:', (error as Error).message);
+    console.error("\n❌ Authentication failed:", (error as Error).message);
 
     // Check if it's an OAuth state error
-    if ((error as Error).message.includes('state') || page.url().includes('error=')) {
-      console.error('\n⚠️  This looks like an Auth0 OAuth configuration issue.');
-      console.error('Common fixes:');
-      console.error('  1. Make sure your app is running at:', baseUrl);
-      console.error('  2. Check Auth0 dashboard > Applications > Settings:');
-      console.error('     - Allowed Callback URLs should include:', baseUrl);
-      console.error('     - Allowed Logout URLs should include:', baseUrl);
-      console.error('     - Allowed Web Origins should include:', baseUrl);
-      console.error('  3. Make sure you copied Auth0 config from lium/apps/web/.env.local\n');
+    if (
+      (error as Error).message.includes("state") ||
+      page.url().includes("error=")
+    ) {
+      console.error(
+        "\n⚠️  This looks like an Auth0 OAuth configuration issue.",
+      );
+      console.error("Common fixes:");
+      console.error("  1. Make sure your app is running at:", baseUrl);
+      console.error("  2. Check Auth0 dashboard > Applications > Settings:");
+      console.error("     - Allowed Callback URLs should include:", baseUrl);
+      console.error("     - Allowed Logout URLs should include:", baseUrl);
+      console.error("     - Allowed Web Origins should include:", baseUrl);
+      console.error(
+        "  3. Make sure you copied Auth0 config from lium/apps/web/.env.local\n",
+      );
     }
 
     throw error;

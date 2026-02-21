@@ -3,9 +3,9 @@
  * Represents the login page and Auth0 authentication flow
  */
 
-import type { Page } from '@playwright/test';
-import { BasePage } from './BasePage.js';
-import type { EnvironmentConfig } from '../../shared/types/index.js';
+import type { Page } from "@playwright/test";
+import { BasePage } from "./BasePage.js";
+import type { EnvironmentConfig } from "../../shared/types/index.js";
 
 export class LoginPage extends BasePage {
   // Selectors
@@ -31,7 +31,7 @@ export class LoginPage extends BasePage {
    * Navigate to login page
    */
   async goto(): Promise<void> {
-    await super.goto('/login');
+    await super.goto("/login");
   }
 
   /**
@@ -86,7 +86,7 @@ export class LoginPage extends BasePage {
     if (await this.hasErrorMessage()) {
       return await this.getText(this.selectors.errorMessage);
     }
-    return '';
+    return "";
   }
 
   /**
@@ -94,6 +94,6 @@ export class LoginPage extends BasePage {
    */
   async isOnLoginPage(): Promise<boolean> {
     const url = this.getCurrentUrl();
-    return url.includes('/login') || url.includes('auth0.com');
+    return url.includes("/login") || url.includes("auth0.com");
   }
 }

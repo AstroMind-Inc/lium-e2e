@@ -3,16 +3,17 @@
  * Represents the main dashboard page after login
  */
 
-import type { Page } from '@playwright/test';
-import { BasePage } from './BasePage.js';
-import type { EnvironmentConfig } from '../../shared/types/index.js';
+import type { Page } from "@playwright/test";
+import { BasePage } from "./BasePage.js";
+import type { EnvironmentConfig } from "../../shared/types/index.js";
 
 export class DashboardPage extends BasePage {
   // Selectors
   private selectors = {
     dashboardHeader: 'h1, [data-testid="dashboard-header"]',
     userMenu: '[data-testid="user-menu"], .user-menu',
-    logoutButton: '[data-testid="logout"], button:has-text("Logout"), button:has-text("Sign out")',
+    logoutButton:
+      '[data-testid="logout"], button:has-text("Logout"), button:has-text("Sign out")',
     welcomeMessage: '[data-testid="welcome-message"], .welcome-message',
   };
 
@@ -24,7 +25,7 @@ export class DashboardPage extends BasePage {
    * Navigate to dashboard
    */
   async goto(): Promise<void> {
-    await super.goto('/dashboard');
+    await super.goto("/dashboard");
   }
 
   /**
@@ -32,7 +33,7 @@ export class DashboardPage extends BasePage {
    */
   async isOnDashboard(): Promise<boolean> {
     const url = this.getCurrentUrl();
-    return url.includes('/dashboard');
+    return url.includes("/dashboard");
   }
 
   /**
@@ -78,6 +79,6 @@ export class DashboardPage extends BasePage {
     if (await this.hasWelcomeMessage()) {
       return await this.getText(this.selectors.welcomeMessage);
     }
-    return '';
+    return "";
   }
 }

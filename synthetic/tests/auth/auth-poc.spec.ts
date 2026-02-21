@@ -3,18 +3,21 @@
  * Simple test to verify saved auth state works
  */
 
-import { test, expect } from '../../fixtures/index.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { test, expect } from "../../fixtures/index.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-test.describe('Auth POC', () => {
+test.describe("Auth POC", () => {
   // Use saved admin session
   test.use({
-    storageState: path.resolve(__dirname, '../../../playwright/.auth/admin.json'),
+    storageState: path.resolve(
+      __dirname,
+      "../../../playwright/.auth/admin.json",
+    ),
   });
-  test('can access app with saved auth', async ({ page, envConfig }) => {
+  test("can access app with saved auth", async ({ page, envConfig }) => {
     // Navigate to app - should be authenticated via saved state
     await page.goto(envConfig.baseUrls.web);
 
@@ -23,10 +26,14 @@ test.describe('Auth POC', () => {
 
     // Check we're not on login/auth page
     const url = page.url();
-    const isAuthenticated = !url.includes('auth0.com') && !url.includes('/login');
+    const isAuthenticated =
+      !url.includes("auth0.com") && !url.includes("/login");
 
     // Take a screenshot for visual verification
-    await page.screenshot({ path: 'reports/auth-poc-screenshot.png', fullPage: false });
+    await page.screenshot({
+      path: "reports/auth-poc-screenshot.png",
+      fullPage: false,
+    });
 
     console.log(`Current URL: ${url}`);
     console.log(`Authenticated: ${isAuthenticated}`);
@@ -34,7 +41,7 @@ test.describe('Auth POC', () => {
     expect(isAuthenticated).toBe(true);
   });
 
-  test('can access /chats route', async ({ page, envConfig }) => {
+  test("can access /chats route", async ({ page, envConfig }) => {
     // Navigate to chats
     await page.goto(`${envConfig.baseUrls.web}/chats`);
 
@@ -43,13 +50,16 @@ test.describe('Auth POC', () => {
 
     // Should be on chats page (not redirected to login)
     const url = page.url();
-    const onChats = url.includes('/chats');
+    const onChats = url.includes("/chats");
 
     console.log(`Current URL: ${url}`);
     console.log(`On chats page: ${onChats}`);
 
     // Take screenshot
-    await page.screenshot({ path: 'reports/chats-screenshot.png', fullPage: false });
+    await page.screenshot({
+      path: "reports/chats-screenshot.png",
+      fullPage: false,
+    });
 
     expect(onChats).toBe(true);
   });

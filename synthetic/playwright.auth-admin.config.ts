@@ -2,17 +2,17 @@
  * Playwright config for admin authentication setup
  */
 
-import { defineConfig } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { defineConfig } from "@playwright/test";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  testDir: './auth-setup',
+  testDir: "./auth-setup",
   timeout: 600000, // 10 minutes for manual login
-  globalSetup: path.resolve(__dirname, './auth-setup/setup-admin.ts'),
+  globalSetup: path.resolve(__dirname, "./auth-setup/setup-admin.ts"),
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
   },
 });

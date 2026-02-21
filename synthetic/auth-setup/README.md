@@ -7,6 +7,7 @@ This directory contains scripts for one-time interactive authentication that sav
 **Problem:** OAuth login is secure but slow. Doing it for every test run wastes time.
 
 **Solution:**
+
 1. You log in **once** via browser (interactive, secure, guided)
 2. Your authenticated session is saved locally
 3. All future tests reuse that session and run **headless** (fast!)
@@ -14,42 +15,53 @@ This directory contains scripts for one-time interactive authentication that sav
 ## Quick Start
 
 ### Setup Admin Authentication
+
 ```bash
 make auth-setup-admin
 ```
+
 - Opens browser with clear prompt
 - You log in with @astromind.com account via Google OAuth
 - Session saved to `playwright/.auth/admin.json` (gitignored)
 - All admin tests will now run headless
 
 ### Setup Regular User Authentication
+
 ```bash
 make auth-setup-user
 ```
+
 - Opens browser with clear prompt
 - You log in with non-@astromind.com account
 - Session saved to `playwright/.auth/user.json` (gitignored)
 - All user tests will now run headless
 
 ### Setup Both
+
 ```bash
 make auth-setup-all
 ```
+
 Sets up both admin and user sessions in sequence.
 
 ## Managing Authentication
 
 ### Check Status
+
 ```bash
 make auth-status
 ```
+
 Shows which auth sessions are saved and when they were last updated.
 
 ### Clear Sessions
+
 ```bash
 make auth-clear
 ```
+
 Removes all saved sessions. Useful when:
+
 - Tokens expire
 - You want to test with a different account
 - You're troubleshooting auth issues
@@ -89,10 +101,10 @@ Tests automatically use saved auth based on their filename:
 // tests/admin-dashboard.spec.ts
 // This will automatically use admin.json (chromium-admin project)
 
-test('admin can access settings', async ({ page }) => {
+test("admin can access settings", async ({ page }) => {
   // Already logged in as admin!
-  await page.goto('/settings');
-  await expect(page.locator('h1')).toContainText('Settings');
+  await page.goto("/settings");
+  await expect(page.locator("h1")).toContainText("Settings");
 });
 ```
 
@@ -100,10 +112,10 @@ test('admin can access settings', async ({ page }) => {
 // tests/user-profile.spec.ts
 // This will automatically use user.json (chromium-user project)
 
-test('user can view profile', async ({ page }) => {
+test("user can view profile", async ({ page }) => {
   // Already logged in as user!
-  await page.goto('/profile');
-  await expect(page.locator('h1')).toContainText('Profile');
+  await page.goto("/profile");
+  await expect(page.locator("h1")).toContainText("Profile");
 });
 ```
 
@@ -115,8 +127,8 @@ If you need to test the login flow itself (not just authenticated features):
 // tests/auth/manual-login-poc.spec.ts
 // No saved auth - tests the login flow itself
 
-test('user can log in via OAuth', async ({ page }) => {
-  await page.goto('/');
+test("user can log in via OAuth", async ({ page }) => {
+  await page.goto("/");
   // Test will wait for manual login
   // See manual-login-poc.spec.ts for examples
 });
@@ -125,16 +137,20 @@ test('user can log in via OAuth', async ({ page }) => {
 ## Troubleshooting
 
 **Browser doesn't open:**
+
 - Check that you have Playwright browsers installed: `npx playwright install`
 
 **"Auth session not found" error:**
+
 - Run `make auth-setup-admin` or `make auth-setup-user` first
 
 **Tests fail with 401/403 errors:**
+
 - Your session may have expired
 - Run `make auth-clear` then re-run setup
 
 **Want to test with different account:**
+
 - Run `make auth-clear`
 - Re-run `make auth-setup-admin` or `make auth-setup-user`
 - Log in with the new account
