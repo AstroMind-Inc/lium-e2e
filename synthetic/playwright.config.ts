@@ -81,48 +81,9 @@ export default defineConfig({
 
   // Reporter configuration
   reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['html', { outputFolder: '../playwright-report', open: 'never' }],
     ['list'],
-    ['junit', { outputFile: 'reports/junit-results.xml' }],
-    // JSONL reporter (inline object to avoid module loading issues)
-    [{
-      async onTestEnd(test: TestCase, result: PlaywrightTestResult) {
-        console.log('[JSONL Reporter] onTestEnd called for:', test.title);
-        try {
-          const pillar = test.location.file.includes('/synthetic/') ? 'synthetic' : 'integration';
-          const environment = (process.env.TEST_ENV || 'local') as any;
-          const testTitle = test.titlePath().slice(1).join(' › ');
-          const testFile = test.location.file.split(`/${pillar}/tests/`)[1]?.replace(/\.spec\.ts$/, '') || path.basename(test.location.file, '.spec.ts');
-
-          let status: 'passed' | 'failed' | 'skipped';
-          if (result.status === 'passed') status = 'passed';
-          else if (result.status === 'skipped') status = 'skipped';
-          else status = 'failed';
-
-          const screenshot = result.attachments.find(a => a.name === 'screenshot' || a.contentType?.startsWith('image/'))?.path;
-          const trace = result.attachments.find(a => a.name === 'trace' || a.contentType?.includes('zip'))?.path;
-
-          await resultWriter.writeResult({
-            timestamp: new Date().toISOString(),
-            pillar,
-            environment,
-            test: `${testFile} › ${testTitle}`,
-            status,
-            duration: result.duration,
-            user: process.env.USER || os.userInfo().username || 'unknown',
-            error: result.error?.message,
-            screenshot,
-            trace,
-            metadata: {
-              browser: test.parent.project()?.name,
-              retries: result.retry,
-            },
-          });
-        } catch (error) {
-          console.warn(`[JSONL Reporter] Failed to write result: ${(error as Error).message}`);
-        }
-      }
-    }],
+    ['junit', { outputFile: '../reports/junit-results.xml' }],
   ],
 
   // Shared settings for all the projects below
@@ -206,6 +167,6 @@ export default defineConfig({
     timeout: 10000,
   },
 
-  // Output folder for test artifacts
-  outputDir: 'test-results',
+  // Output folder for test artifacts (use root-level to consolidate all tests)
+  outputDir: '../test-results',
 });

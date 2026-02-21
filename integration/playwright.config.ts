@@ -28,12 +28,11 @@ export default defineConfig({
   // Opt out of parallel tests on CI
   workers: process.env.CI ? 1 : undefined,
 
-  // Reporter configuration
+  // Reporter configuration (use same report folder as synthetic for consolidated view)
   reporter: [
-    ['html', { outputFolder: '../reports/playwright-api-report', open: 'never' }],
+    ['html', { outputFolder: '../playwright-report', open: 'never' }],
     ['list'],
     ['junit', { outputFile: '../reports/junit-api-results.xml' }],
-    [jsonlReporterPath], // JSONL for historical tracking
   ],
 
   // Shared settings for all the projects below
