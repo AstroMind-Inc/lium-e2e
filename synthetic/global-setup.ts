@@ -1,6 +1,9 @@
 /**
  * Global Setup - runs before all tests
- * Checks and refreshes authentication tokens automatically
+ *
+ * Pre-flight checks:
+ * 1. Verify host is reachable (fail fast if app is down)
+ * 2. Check and auto-refresh authentication tokens
  */
 
 import { type FullConfig } from "@playwright/test";
@@ -45,35 +48,48 @@ async function globalSetup(config: FullConfig) {
     process.exit(1);
   }
 
-  console.log("🔍 Checking authentication sessions...\n");
+  console.log("🔐 Checking and renewing authentication sessions...\n");
 
   const authDir = path.join(__dirname, "../playwright/.auth");
   const adminAuthFile = path.join(authDir, "admin.json");
   const userAuthFile = path.join(authDir, "user.json");
 
-  // Check admin session
+  let hasValidAuth = false;
+
+  // Check and refresh admin session
   if (fs.existsSync(adminAuthFile)) {
-    console.log("🔐 Admin session:");
+    console.log("🔑 Admin session:");
     const adminValid = await refreshAuthIfNeeded(adminAuthFile, baseUrl);
-    if (!adminValid) {
+    if (adminValid) {
+      hasValidAuth = true;
+    } else {
       console.log("⚠️  Admin session expired and could not be refreshed");
       console.log("   Run: make auth-setup-admin\n");
     }
     console.log();
   }
 
-  // Check user session
+  // Check and refresh user session
   if (fs.existsSync(userAuthFile)) {
     console.log("👤 User session:");
     const userValid = await refreshAuthIfNeeded(userAuthFile, baseUrl);
-    if (!userValid) {
+    if (userValid) {
+      hasValidAuth = true;
+    } else {
       console.log("⚠️  User session expired and could not be refreshed");
       console.log("   Run: make auth-setup-user\n");
     }
     console.log();
   }
 
-  console.log("✅ Authentication check complete\n");
+  // Warn if no valid auth sessions (but don't fail - some tests might not need auth)
+  if (!hasValidAuth && (fs.existsSync(adminAuthFile) || fs.existsSync(userAuthFile))) {
+    console.log("⚠️  No valid authentication sessions available");
+    console.log("   Tests requiring authentication may fail");
+    console.log("   Run: make auth-setup-admin or make auth-setup-user\n");
+  }
+
+  console.log("✅ Pre-flight checks complete\n");
 }
 
 export default globalSetup;
