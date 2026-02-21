@@ -7,6 +7,7 @@ import inquirer from 'inquirer';
 import type { Environment, Pillar } from '../../shared/types/index.js';
 import { envSelector } from '../../shared/environment/env-selector.js';
 import { credentialManager } from '../../shared/credentials/credential-manager.js';
+import { moduleScanner } from '../../shared/test-discovery/module-scanner.js';
 
 export class CLIPrompts {
   /**
@@ -61,51 +62,39 @@ export class CLIPrompts {
 
   /**
    * Prompt for test module selection (for synthetic tests)
+   * Auto-discovers modules from filesystem
    */
   async promptForModule(): Promise<string | null> {
+    // Scan for available modules
+    const modules = await moduleScanner.scanModules('synthetic');
+
+    // Build choices dynamically
+    const choices = [
+      {
+        name: '🎯 All Modules (complete test suite)',
+        value: 'all',
+      },
+      {
+        name: '━'.repeat(40),
+        disabled: true,
+      },
+    ];
+
+    // Add discovered modules
+    for (const module of modules) {
+      const icon = moduleScanner.getModuleIcon(module.name);
+      choices.push({
+        name: `${icon} ${module.displayName} - ${module.description}`,
+        value: module.name,
+      });
+    }
+
     const { module } = await inquirer.prompt<{ module: string }>([
       {
         type: 'list',
         name: 'module',
         message: 'Select test module:',
-        choices: [
-          {
-            name: '🎯 All Modules (complete test suite)',
-            value: 'all',
-          },
-          {
-            name: '━'.repeat(40),
-            disabled: true,
-          },
-          {
-            name: '🔍 Basic - Health checks & smoke tests',
-            value: 'basic',
-          },
-          {
-            name: '🔐 Auth - Authentication & sessions',
-            value: 'auth',
-          },
-          {
-            name: '💬 Chats - Chat functionality',
-            value: 'chats',
-          },
-          {
-            name: '📁 Storage - File storage & uploads',
-            value: 'storage',
-          },
-          {
-            name: '🤖 Agents - AI agent tests',
-            value: 'agents',
-          },
-          {
-            name: '🔧 Tools - Tool functionality',
-            value: 'tools',
-          },
-          {
-            name: '🏢 Tenants - Multi-tenancy',
-            value: 'tenants',
-          },
-        ],
+        choices,
       },
     ]);
 
@@ -114,47 +103,39 @@ export class CLIPrompts {
 
   /**
    * Prompt for integration test module selection
+   * Auto-discovers modules from filesystem
    */
   async promptForIntegrationModule(): Promise<string | null> {
+    // Scan for available modules
+    const modules = await moduleScanner.scanModules('integration');
+
+    // Build choices dynamically
+    const choices = [
+      {
+        name: '🎯 All APIs (complete test suite)',
+        value: 'all',
+      },
+      {
+        name: '━'.repeat(40),
+        disabled: true,
+      },
+    ];
+
+    // Add discovered modules
+    for (const module of modules) {
+      const icon = moduleScanner.getModuleIcon(module.name);
+      choices.push({
+        name: `${icon} ${module.displayName} - ${module.description}`,
+        value: module.name,
+      });
+    }
+
     const { module } = await inquirer.prompt<{ module: string }>([
       {
         type: 'list',
         name: 'module',
         message: 'Select API module:',
-        choices: [
-          {
-            name: '🎯 All APIs (complete test suite)',
-            value: 'all',
-          },
-          {
-            name: '━'.repeat(40),
-            disabled: true,
-          },
-          {
-            name: '🔍 Health - API health checks',
-            value: 'health',
-          },
-          {
-            name: '👥 Users - User API endpoints',
-            value: 'users',
-          },
-          {
-            name: '🏢 Tenants - Tenant API endpoints',
-            value: 'tenants',
-          },
-          {
-            name: '💬 Chats - Chat API endpoints',
-            value: 'chats',
-          },
-          {
-            name: '🤖 Agents - Agent API endpoints',
-            value: 'agents',
-          },
-          {
-            name: '🔧 Tools - Tool API endpoints',
-            value: 'tools',
-          },
-        ],
+        choices,
       },
     ]);
 
