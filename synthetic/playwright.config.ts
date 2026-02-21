@@ -61,6 +61,9 @@ class JSONLReporter implements Reporter {
 export default defineConfig({
   testDir: './tests',
 
+  // Global setup - check and refresh auth tokens before tests
+  globalSetup: path.resolve(__dirname, './global-setup.js'),
+
   // Note: Example and manual tests use .spec.ts.skip extension (won't run)
   // _examples/, _future/, and multi-user-flow.spec.ts.skip are skipped
 
