@@ -2,15 +2,15 @@
  * Tests for ResultReader
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { mkdir, rm } from 'fs/promises';
-import { join } from 'path';
-import { ResultWriter } from '../../../shared/results/result-writer.js';
-import { ResultReader } from '../../../shared/results/result-reader.js';
-import type { TestResult } from '../../../shared/types/index.js';
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import { mkdir, rm } from "fs/promises";
+import { join } from "path";
+import { ResultWriter } from "../../../shared/results/result-writer.js";
+import { ResultReader } from "../../../shared/results/result-reader.js";
+import type { TestResult } from "../../../shared/types/index.js";
 
-describe('ResultReader', () => {
-  const testResultsDir = join(process.cwd(), 'test-results-reader');
+describe("ResultReader", () => {
+  const testResultsDir = join(process.cwd(), "test-results-reader");
   let writer: ResultWriter;
   let reader: ResultReader;
 
@@ -26,26 +26,26 @@ describe('ResultReader', () => {
     await rm(testResultsDir, { recursive: true, force: true });
   });
 
-  describe('query', () => {
-    it('should query all results when no filters provided', async () => {
+  describe("query", () => {
+    it("should query all results when no filters provided", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'failed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "failed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
@@ -55,123 +55,123 @@ describe('ResultReader', () => {
       expect(queried.length).toBe(2);
     });
 
-    it('should filter results by pillar', async () => {
+    it("should filter results by pillar", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'integration',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'passed',
+          pillar: "integration",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "passed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const queried = await reader.query({ pillar: 'synthetic' });
+      const queried = await reader.query({ pillar: "synthetic" });
       expect(queried.length).toBe(1);
-      expect(queried[0].pillar).toBe('synthetic');
+      expect(queried[0].pillar).toBe("synthetic");
     });
 
-    it('should filter results by environment', async () => {
+    it("should filter results by environment", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'staging',
-          test: 'test2.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "staging",
+          test: "test2.spec.ts",
+          status: "passed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const queried = await reader.query({ environment: 'staging' });
+      const queried = await reader.query({ environment: "staging" });
       expect(queried.length).toBe(1);
-      expect(queried[0].environment).toBe('staging');
+      expect(queried[0].environment).toBe("staging");
     });
 
-    it('should filter results by status', async () => {
+    it("should filter results by status", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'failed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "failed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const queried = await reader.query({ status: 'failed' });
+      const queried = await reader.query({ status: "failed" });
       expect(queried.length).toBe(1);
-      expect(queried[0].status).toBe('failed');
+      expect(queried[0].status).toBe("failed");
     });
 
-    it('should filter results by user', async () => {
+    it("should filter results by user", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'alice@lium.com',
+          user: "alice@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "passed",
           duration: 2000,
-          user: 'bob@lium.com',
+          user: "bob@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const queried = await reader.query({ user: 'alice@lium.com' });
+      const queried = await reader.query({ user: "alice@lium.com" });
       expect(queried.length).toBe(1);
-      expect(queried[0].user).toBe('alice@lium.com');
+      expect(queried[0].user).toBe("alice@lium.com");
     });
 
-    it('should filter results by date range', async () => {
+    it("should filter results by date range", async () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
@@ -181,117 +181,120 @@ describe('ResultReader', () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const queried = await reader.query({ dateFrom: yesterday, dateTo: tomorrow });
+      const queried = await reader.query({
+        dateFrom: yesterday,
+        dateTo: tomorrow,
+      });
       expect(queried.length).toBe(1);
     });
 
-    it('should return empty array when no results match', async () => {
+    it("should return empty array when no results match", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const queried = await reader.query({ environment: 'staging' });
+      const queried = await reader.query({ environment: "staging" });
       expect(queried.length).toBe(0);
     });
 
-    it('should sort results by timestamp (newest first)', async () => {
+    it("should sort results by timestamp (newest first)", async () => {
       const now = new Date();
       const earlier = new Date(now.getTime() - 1000);
 
       const results: TestResult[] = [
         {
           timestamp: earlier.toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: now.toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "passed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
       const queried = await reader.query();
-      expect(queried[0].test).toBe('test2.spec.ts'); // Newer test first
-      expect(queried[1].test).toBe('test1.spec.ts');
+      expect(queried[0].test).toBe("test2.spec.ts"); // Newer test first
+      expect(queried[1].test).toBe("test1.spec.ts");
     });
   });
 
-  describe('getSummary', () => {
-    it('should calculate summary statistics', async () => {
+  describe("getSummary", () => {
+    it("should calculate summary statistics", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "passed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test3.spec.ts',
-          status: 'failed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test3.spec.ts",
+          status: "failed",
           duration: 3000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test4.spec.ts',
-          status: 'skipped',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test4.spec.ts",
+          status: "skipped",
           duration: 0,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const summary = await reader.getSummary('synthetic', 'dev', 7);
+      const summary = await reader.getSummary("synthetic", "dev", 7);
 
       expect(summary.total).toBe(4);
       expect(summary.passed).toBe(2);
@@ -301,8 +304,8 @@ describe('ResultReader', () => {
       expect(summary.passRate).toBe(50); // 2/4 = 50%
     });
 
-    it('should return zero values for no results', async () => {
-      const summary = await reader.getSummary('synthetic', 'dev', 7);
+    it("should return zero values for no results", async () => {
+      const summary = await reader.getSummary("synthetic", "dev", 7);
 
       expect(summary.total).toBe(0);
       expect(summary.passed).toBe(0);
@@ -311,122 +314,122 @@ describe('ResultReader', () => {
     });
   });
 
-  describe('getFlakyTests', () => {
-    it('should identify flaky tests', async () => {
+  describe("getFlakyTests", () => {
+    it("should identify flaky tests", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'flaky-test.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "flaky-test.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'flaky-test.spec.ts',
-          status: 'failed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "flaky-test.spec.ts",
+          status: "failed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'flaky-test.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "flaky-test.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'stable-test.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "stable-test.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const flakyTests = await reader.getFlakyTests('synthetic', 30);
+      const flakyTests = await reader.getFlakyTests("synthetic", 30);
 
       expect(flakyTests.length).toBe(1);
-      expect(flakyTests[0].test).toBe('flaky-test.spec.ts');
+      expect(flakyTests[0].test).toBe("flaky-test.spec.ts");
       expect(flakyTests[0].runs).toBe(3);
       expect(flakyTests[0].failures).toBe(1);
       expect(flakyTests[0].flakyRate).toBeCloseTo(33.33, 1);
     });
 
-    it('should not identify stable passing tests as flaky', async () => {
+    it("should not identify stable passing tests as flaky", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'stable-test.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "stable-test.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'stable-test.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "stable-test.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'stable-test.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "stable-test.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const flakyTests = await reader.getFlakyTests('synthetic', 30);
+      const flakyTests = await reader.getFlakyTests("synthetic", 30);
       expect(flakyTests.length).toBe(0);
     });
   });
 
-  describe('getTrends', () => {
-    it('should calculate trend data by date', async () => {
+  describe("getTrends", () => {
+    it("should calculate trend data by date", async () => {
       const results: TestResult[] = [
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test1.spec.ts',
-          status: 'passed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test1.spec.ts",
+          status: "passed",
           duration: 1000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
         {
           timestamp: new Date().toISOString(),
-          pillar: 'synthetic',
-          environment: 'dev',
-          test: 'test2.spec.ts',
-          status: 'failed',
+          pillar: "synthetic",
+          environment: "dev",
+          test: "test2.spec.ts",
+          status: "failed",
           duration: 2000,
-          user: 'test@lium.com',
+          user: "test@lium.com",
         },
       ];
 
       await writer.writeResults(results);
 
-      const trends = await reader.getTrends('synthetic', 'dev', 7);
+      const trends = await reader.getTrends("synthetic", "dev", 7);
 
       expect(trends.length).toBeGreaterThan(0);
       expect(trends[0].passRate).toBe(50); // 1 passed, 1 failed
@@ -434,8 +437,8 @@ describe('ResultReader', () => {
       expect(trends[0].totalTests).toBe(2);
     });
 
-    it('should return empty array when no results', async () => {
-      const trends = await reader.getTrends('synthetic', 'dev', 7);
+    it("should return empty array when no results", async () => {
+      const trends = await reader.getTrends("synthetic", "dev", 7);
       expect(trends.length).toBe(0);
     });
   });

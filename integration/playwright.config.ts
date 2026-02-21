@@ -3,18 +3,21 @@
  * API testing configuration
  */
 
-import { defineConfig } from '@playwright/test';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { defineConfig } from "@playwright/test";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Resolve reporter path
-const jsonlReporterPath = path.resolve(__dirname, '../shared/reporting/jsonl-reporter.ts');
+const jsonlReporterPath = path.resolve(
+  __dirname,
+  "../shared/reporting/jsonl-reporter.ts",
+);
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: "./tests",
 
   // Run tests in files in parallel
   fullyParallel: true,
@@ -30,20 +33,20 @@ export default defineConfig({
 
   // Reporter configuration (use same report folder as synthetic for consolidated view)
   reporter: [
-    ['html', { outputFolder: '../playwright-report', open: 'never' }],
-    ['list'],
-    ['junit', { outputFile: '../reports/junit-api-results.xml' }],
+    ["html", { outputFolder: "../playwright-report", open: "never" }],
+    ["list"],
+    ["junit", { outputFile: "../reports/junit-api-results.xml" }],
   ],
 
   // Shared settings for all the projects below
   use: {
     // Base URL for API requests
-    baseURL: process.env.BASE_API_URL || 'http://localhost:4000',
+    baseURL: process.env.BASE_API_URL || "http://localhost:4000",
 
     // Extra HTTP headers
     extraHTTPHeaders: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
 
     // Default timeout for API requests
@@ -53,7 +56,7 @@ export default defineConfig({
   // Configure projects (no browser needed for API tests)
   projects: [
     {
-      name: 'api',
+      name: "api",
       use: {},
     },
   ],

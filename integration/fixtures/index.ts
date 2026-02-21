@@ -3,13 +3,16 @@
  * Provides authenticated request context, environment config, and OpenAPI validation
  */
 
-import { test as base, request } from '@playwright/test';
-import { envSelector } from '../../shared/environment/env-selector.js';
-import { credentialManager } from '../../shared/credentials/credential-manager.js';
-import { Auth0Helper } from '../../shared/auth/auth0-helper.js';
-import { openApiValidator } from './openapi-validator.js';
-import type { Environment, EnvironmentConfig } from '../../shared/types/index.js';
-import type { APIRequestContext } from '@playwright/test';
+import { test as base, request } from "@playwright/test";
+import { envSelector } from "../../shared/environment/env-selector.js";
+import { credentialManager } from "../../shared/credentials/credential-manager.js";
+import { Auth0Helper } from "../../shared/auth/auth0-helper.js";
+import { openApiValidator } from "./openapi-validator.js";
+import type {
+  Environment,
+  EnvironmentConfig,
+} from "../../shared/types/index.js";
+import type { APIRequestContext } from "@playwright/test";
 
 // Extend base test with custom fixtures
 type CustomFixtures = {
@@ -30,7 +33,7 @@ type CustomFixtures = {
 export const test = base.extend<CustomFixtures>({
   // Environment fixture
   environment: async ({}, use) => {
-    const env = (process.env.E2E_ENVIRONMENT as Environment) || 'local';
+    const env = (process.env.E2E_ENVIRONMENT as Environment) || "local";
     await use(env);
   },
 
@@ -61,12 +64,12 @@ export const test = base.extend<CustomFixtures>({
     try {
       const tokenSet = await auth0Helper.loginWithPassword(
         credentials.username,
-        credentials.password
+        credentials.password,
       );
       await use(tokenSet.access_token);
     } catch (error) {
-      console.warn('Failed to get access token:', (error as Error).message);
-      await use(''); // Use empty string if auth fails
+      console.warn("Failed to get access token:", (error as Error).message);
+      await use(""); // Use empty string if auth fails
     }
   },
 
@@ -75,8 +78,8 @@ export const test = base.extend<CustomFixtures>({
     const context = await request.newContext({
       baseURL: envConfig.baseUrls.api,
       extraHTTPHeaders: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
     });
 
@@ -89,9 +92,9 @@ export const test = base.extend<CustomFixtures>({
     const context = await request.newContext({
       baseURL: envConfig.baseUrls.api,
       extraHTTPHeaders: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
@@ -105,4 +108,4 @@ export const test = base.extend<CustomFixtures>({
   },
 });
 
-export { expect } from '@playwright/test';
+export { expect } from "@playwright/test";

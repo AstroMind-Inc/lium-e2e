@@ -4,7 +4,7 @@
  */
 
 // Set test environment
-process.env.NODE_ENV = 'test';
+process.env.NODE_ENV = "test";
 
 // Increase test timeout for integration tests
 jest.setTimeout(10000);

@@ -3,10 +3,10 @@
  * Validates API responses against OpenAPI schemas
  */
 
-import Ajv from 'ajv';
-import addFormats from 'ajv-formats';
-import { readFile } from 'fs/promises';
-import { resolve } from 'path';
+import Ajv from "ajv";
+import addFormats from "ajv-formats";
+import { readFile } from "fs/promises";
+import { resolve } from "path";
 
 export class OpenAPIValidator {
   private ajv: Ajv;
@@ -25,10 +25,10 @@ export class OpenAPIValidator {
    * Load OpenAPI spec from file
    */
   async loadSpec(specPath: string): Promise<void> {
-    const fullPath = resolve(process.cwd(), 'integration/schemas', specPath);
+    const fullPath = resolve(process.cwd(), "integration/schemas", specPath);
 
     try {
-      const content = await readFile(fullPath, 'utf-8');
+      const content = await readFile(fullPath, "utf-8");
       const spec = JSON.parse(content);
 
       // Extract schemas from OpenAPI spec
@@ -40,7 +40,7 @@ export class OpenAPIValidator {
       }
     } catch (error) {
       throw new Error(
-        `Failed to load OpenAPI spec from ${specPath}: ${(error as Error).message}`
+        `Failed to load OpenAPI spec from ${specPath}: ${(error as Error).message}`,
       );
     }
   }
@@ -48,21 +48,26 @@ export class OpenAPIValidator {
   /**
    * Validate response data against a schema
    */
-  validate(schemaName: string, data: any): { valid: boolean; errors: string[] } {
+  validate(
+    schemaName: string,
+    data: any,
+  ): { valid: boolean; errors: string[] } {
     const schema = this.schemas.get(schemaName);
 
     if (!schema) {
       return {
         valid: false,
-        errors: [`Schema "${schemaName}" not found. Available schemas: ${Array.from(this.schemas.keys()).join(', ')}`],
+        errors: [
+          `Schema "${schemaName}" not found. Available schemas: ${Array.from(this.schemas.keys()).join(", ")}`,
+        ],
       };
     }
 
     const valid = this.ajv.validate(schema, data);
 
     if (!valid && this.ajv.errors) {
-      const errors = this.ajv.errors.map(err => {
-        const path = err.instancePath || 'root';
+      const errors = this.ajv.errors.map((err) => {
+        const path = err.instancePath || "root";
         return `${path}: ${err.message}`;
       });
 
@@ -80,7 +85,7 @@ export class OpenAPIValidator {
 
     if (!result.valid) {
       throw new Error(
-        `Schema validation failed for "${schemaName}":\n${result.errors.join('\n')}`
+        `Schema validation failed for "${schemaName}":\n${result.errors.join("\n")}`,
       );
     }
   }

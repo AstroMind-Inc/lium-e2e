@@ -3,11 +3,11 @@
  * Verifies the backend API is accessible and responding
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Backend API Health', () => {
-  test('API responds to health check', async ({ request }) => {
-    const baseUrl = process.env.API_BASE_URL || 'http://lium-api:8000';
+test.describe("Backend API Health", () => {
+  test("API responds to health check", async ({ request }) => {
+    const baseUrl = process.env.API_BASE_URL || "http://lium-api:8000";
 
     console.log(`Checking API health at: ${baseUrl}`);
 
@@ -20,15 +20,15 @@ test.describe('Backend API Health', () => {
     expect(response.status()).toBeLessThan(500);
   });
 
-  test('API is reachable', async ({ request }) => {
-    const baseUrl = process.env.API_BASE_URL || 'http://lium-api:8000';
+  test("API is reachable", async ({ request }) => {
+    const baseUrl = process.env.API_BASE_URL || "http://lium-api:8000";
 
     try {
       const response = await request.get(baseUrl);
       console.log(`API base URL responded with: ${response.status()}`);
       expect(response.status()).toBeLessThan(500);
     } catch (error) {
-      console.error('API not reachable:', (error as Error).message);
+      console.error("API not reachable:", (error as Error).message);
       throw error;
     }
   });

@@ -2,24 +2,24 @@
  * Unit tests for Slack Reporter
  */
 
-import { SlackReporter } from '../../../shared/reporting/slack-reporter';
-import * as fs from 'fs/promises';
-import type { TestSummary } from '../../../shared/types/index.js';
+import { SlackReporter } from "../../../shared/reporting/slack-reporter";
+import * as fs from "fs/promises";
+import type { TestSummary } from "../../../shared/types/index.js";
 
 // Mock @slack/webhook
-jest.mock('@slack/webhook', () => {
+jest.mock("@slack/webhook", () => {
   return {
     IncomingWebhook: jest.fn().mockImplementation((_url: string) => {
       return {
-        send: jest.fn().mockResolvedValue({ text: 'ok' }),
+        send: jest.fn().mockResolvedValue({ text: "ok" }),
       };
     }),
   };
 });
 
-describe('SlackReporter', () => {
+describe("SlackReporter", () => {
   let reporter: SlackReporter;
-  const testConfigDir = './test-config';
+  const testConfigDir = "./test-config";
   const testConfigPath = `${testConfigDir}/config/slack.json`;
 
   beforeEach(async () => {
@@ -31,10 +31,10 @@ describe('SlackReporter', () => {
     await fs.rm(testConfigDir, { recursive: true, force: true });
   });
 
-  describe('loadConfig', () => {
-    it('should load valid config', async () => {
+  describe("loadConfig", () => {
+    it("should load valid config", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: true,
         notifyOn: {
           testComplete: true,
@@ -44,11 +44,11 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
       // Mock process.cwd() to return test directory
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
 
       await fs.writeFile(testConfigPath, JSON.stringify(config));
 
@@ -57,9 +57,9 @@ describe('SlackReporter', () => {
       expect(reporter.isEnabled()).toBe(true);
     });
 
-    it('should not enable if webhookUrl is placeholder', async () => {
+    it("should not enable if webhookUrl is placeholder", async () => {
       const config = {
-        webhookUrl: 'REPLACE_WITH_SLACK_WEBHOOK_URL',
+        webhookUrl: "REPLACE_WITH_SLACK_WEBHOOK_URL",
         enabled: true,
         notifyOn: {
           testComplete: true,
@@ -69,10 +69,10 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
 
       await fs.writeFile(testConfigPath, JSON.stringify(config));
 
@@ -81,9 +81,9 @@ describe('SlackReporter', () => {
       expect(reporter.isEnabled()).toBe(false);
     });
 
-    it('should not enable if enabled is false', async () => {
+    it("should not enable if enabled is false", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: false,
         notifyOn: {
           testComplete: true,
@@ -93,10 +93,10 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
 
       await fs.writeFile(testConfigPath, JSON.stringify(config));
 
@@ -105,9 +105,9 @@ describe('SlackReporter', () => {
       expect(reporter.isEnabled()).toBe(false);
     });
 
-    it('should handle missing config file gracefully', async () => {
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    it("should handle missing config file gracefully", async () => {
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
 
       await reporter.loadConfig();
 
@@ -118,11 +118,11 @@ describe('SlackReporter', () => {
     });
   });
 
-  describe('sendTestSummary', () => {
-    it('should not send if not enabled', async () => {
+  describe("sendTestSummary", () => {
+    it("should not send if not enabled", async () => {
       const summary: TestSummary = {
-        pillar: 'synthetic',
-        environment: 'dev',
+        pillar: "synthetic",
+        environment: "dev",
         total: 100,
         passed: 90,
         failed: 10,
@@ -133,13 +133,13 @@ describe('SlackReporter', () => {
 
       // Reporter not configured, so it won't send
       await expect(
-        reporter.sendTestSummary('synthetic', 'dev', summary)
+        reporter.sendTestSummary("synthetic", "dev", summary),
       ).resolves.not.toThrow();
     });
 
-    it('should send summary when enabled', async () => {
+    it("should send summary when enabled", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: true,
         notifyOn: {
           testComplete: true,
@@ -149,16 +149,16 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
       await fs.writeFile(testConfigPath, JSON.stringify(config));
       await reporter.loadConfig();
 
       const summary: TestSummary = {
-        pillar: 'synthetic',
-        environment: 'dev',
+        pillar: "synthetic",
+        environment: "dev",
         total: 100,
         passed: 95,
         failed: 5,
@@ -168,13 +168,18 @@ describe('SlackReporter', () => {
       };
 
       await expect(
-        reporter.sendTestSummary('synthetic', 'dev', summary, 'https://report.url')
+        reporter.sendTestSummary(
+          "synthetic",
+          "dev",
+          summary,
+          "https://report.url",
+        ),
       ).resolves.not.toThrow();
     });
 
-    it('should notify on threshold exceeded', async () => {
+    it("should notify on threshold exceeded", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: true,
         notifyOn: {
           testComplete: false,
@@ -184,16 +189,16 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
       await fs.writeFile(testConfigPath, JSON.stringify(config));
       await reporter.loadConfig();
 
       const summary: TestSummary = {
-        pillar: 'integration',
-        environment: 'staging',
+        pillar: "integration",
+        environment: "staging",
         total: 100,
         passed: 85,
         failed: 15, // 15% failure exceeds 10% threshold
@@ -203,27 +208,27 @@ describe('SlackReporter', () => {
       };
 
       await expect(
-        reporter.sendTestSummary('integration', 'staging', summary)
+        reporter.sendTestSummary("integration", "staging", summary),
       ).resolves.not.toThrow();
     });
   });
 
-  describe('sendTestFailure', () => {
-    it('should not send if not enabled', async () => {
+  describe("sendTestFailure", () => {
+    it("should not send if not enabled", async () => {
       await expect(
         reporter.sendTestFailure(
-          'synthetic',
-          'dev',
-          'test/login.spec.ts',
-          'Login failed',
-          'https://report.url'
-        )
+          "synthetic",
+          "dev",
+          "test/login.spec.ts",
+          "Login failed",
+          "https://report.url",
+        ),
       ).resolves.not.toThrow();
     });
 
-    it('should send failure when enabled', async () => {
+    it("should send failure when enabled", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: true,
         notifyOn: {
           testComplete: false,
@@ -233,27 +238,27 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
       await fs.writeFile(testConfigPath, JSON.stringify(config));
       await reporter.loadConfig();
 
       await expect(
         reporter.sendTestFailure(
-          'synthetic',
-          'dev',
-          'test/login.spec.ts',
-          'Login failed: Invalid credentials',
-          'https://report.url'
-        )
+          "synthetic",
+          "dev",
+          "test/login.spec.ts",
+          "Login failed: Invalid credentials",
+          "https://report.url",
+        ),
       ).resolves.not.toThrow();
     });
 
-    it('should truncate long error messages', async () => {
+    it("should truncate long error messages", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: true,
         notifyOn: {
           testComplete: false,
@@ -263,34 +268,34 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
       await fs.writeFile(testConfigPath, JSON.stringify(config));
       await reporter.loadConfig();
 
-      const longError = 'Error: '.repeat(200); // Very long error
+      const longError = "Error: ".repeat(200); // Very long error
 
       await expect(
         reporter.sendTestFailure(
-          'integration',
-          'dev',
-          'test/api.spec.ts',
-          longError
-        )
+          "integration",
+          "dev",
+          "test/api.spec.ts",
+          longError,
+        ),
       ).resolves.not.toThrow();
     });
   });
 
-  describe('isEnabled', () => {
-    it('should return false when not configured', () => {
+  describe("isEnabled", () => {
+    it("should return false when not configured", () => {
       expect(reporter.isEnabled()).toBe(false);
     });
 
-    it('should return true when properly configured', async () => {
+    it("should return true when properly configured", async () => {
       const config = {
-        webhookUrl: 'https://hooks.slack.com/services/TEST',
+        webhookUrl: "https://hooks.slack.com/services/TEST",
         enabled: true,
         notifyOn: {
           testComplete: true,
@@ -300,10 +305,10 @@ describe('SlackReporter', () => {
         thresholds: {
           failurePercentage: 10,
         },
-        channel: '#test',
+        channel: "#test",
       };
 
-      jest.spyOn(process, 'cwd').mockReturnValue(testConfigDir);
+      jest.spyOn(process, "cwd").mockReturnValue(testConfigDir);
       await fs.writeFile(testConfigPath, JSON.stringify(config));
       await reporter.loadConfig();
 
