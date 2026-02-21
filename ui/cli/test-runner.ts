@@ -75,7 +75,13 @@ export class TestRunner {
    * Run Playwright tests (synthetic or integration)
    */
   private async runPlaywrightTests(options: TestRunOptions): Promise<{ success: boolean; exitCode: number }> {
-    // Check auth tokens before running tests
+    // 1. Check if server is up before anything else
+    const serverUp = await this.checkServerHealth(options.environment, options.pillar);
+    if (!serverUp) {
+      return { success: false, exitCode: 1 };
+    }
+
+    // 2. Check auth tokens before running tests
     const authValid = await this.checkAndRefreshAuth(options.environment);
     if (!authValid) {
       return { success: false, exitCode: 1 };
@@ -227,6 +233,106 @@ export class TestRunner {
   }
 
   /**
+   * Check if server is up and accessible
+   */
+  private async checkServerHealth(environment: Environment, pillar: Pillar): Promise<boolean> {
+    console.log(chalk.cyan('🏥 Checking server health...\n'));
+
+    const baseUrl = await this.getBaseUrl(environment);
+    const apiUrl = await this.getApiUrl(environment);
+
+    // For synthetic tests, check web app
+    if (pillar === 'synthetic') {
+      const webHealthy = await this.pingServer(baseUrl, 'Web App');
+      if (!webHealthy) {
+        console.log(chalk.red(`\n❌ Web app is not accessible at: ${baseUrl}\n`));
+        const { shouldContinue } = await inquirer.prompt<{ shouldContinue: boolean }>([
+          {
+            type: 'confirm',
+            name: 'shouldContinue',
+            message: 'The web app appears to be down. Continue anyway?',
+            default: false,
+          },
+        ]);
+
+        if (!shouldContinue) {
+          console.log(chalk.yellow('\n💡 Make sure your app is running:'));
+          console.log(chalk.gray('  cd lium/apps/web && npm run dev'));
+          console.log(chalk.gray('  or check docker-compose if using containers\n'));
+          return false;
+        }
+      }
+    }
+
+    // For integration tests, check API
+    if (pillar === 'integration') {
+      const apiHealthy = await this.pingServer(apiUrl, 'API');
+      if (!apiHealthy) {
+        console.log(chalk.red(`\n❌ API is not accessible at: ${apiUrl}\n`));
+        const { shouldContinue } = await inquirer.prompt<{ shouldContinue: boolean }>([
+          {
+            type: 'confirm',
+            name: 'shouldContinue',
+            message: 'The API appears to be down. Continue anyway?',
+            default: false,
+          },
+        ]);
+
+        if (!shouldContinue) {
+          console.log(chalk.yellow('\n💡 Make sure your API is running:'));
+          console.log(chalk.gray('  cd lium/apps/api && npm run dev'));
+          console.log(chalk.gray('  or check docker-compose if using containers\n'));
+          return false;
+        }
+      }
+    }
+
+    console.log(chalk.green('✅ Server health check passed\n'));
+    return true;
+  }
+
+  /**
+   * Ping a server to check if it's responding
+   */
+  private async pingServer(url: string, serverName: string): Promise<boolean> {
+    try {
+      console.log(chalk.gray(`  Checking ${serverName}: ${url}`));
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        redirect: 'manual', // Don't follow redirects (auth redirect is OK)
+      });
+
+      clearTimeout(timeout);
+
+      // Any response (even 401, 403, redirect) means server is up
+      // We just want to know if it's responding
+      if (response.status >= 200 && response.status < 600) {
+        console.log(chalk.green(`  ✓ ${serverName} is responding (status: ${response.status})`));
+        return true;
+      }
+
+      return false;
+    } catch (error: any) {
+      // Check specific error types
+      if (error.name === 'AbortError') {
+        console.log(chalk.red(`  ✗ ${serverName} timed out (5s)`));
+      } else if (error.code === 'ECONNREFUSED') {
+        console.log(chalk.red(`  ✗ ${serverName} connection refused`));
+      } else if (error.code === 'ENOTFOUND') {
+        console.log(chalk.red(`  ✗ ${serverName} hostname not found`));
+      } else {
+        console.log(chalk.red(`  ✗ ${serverName} not accessible: ${error.message}`));
+      }
+      return false;
+    }
+  }
+
+  /**
    * Check and refresh authentication tokens
    */
   private async checkAndRefreshAuth(environment: Environment): Promise<boolean> {
@@ -326,6 +432,20 @@ export class TestRunner {
       return config.baseUrls.web;
     } catch {
       return 'http://localhost:3000';
+    }
+  }
+
+  /**
+   * Get API URL for environment
+   */
+  private async getApiUrl(environment: Environment): Promise<string> {
+    try {
+      const configPath = path.resolve(`./config/environments/${environment}.json`);
+      const configFile = fs.readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(configFile);
+      return config.baseUrls.api;
+    } catch {
+      return 'http://localhost:4000';
     }
   }
 }
