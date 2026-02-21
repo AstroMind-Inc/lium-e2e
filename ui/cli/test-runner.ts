@@ -304,7 +304,9 @@ export class TestRunner {
     if (pillar === "integration") {
       const apiHealthy = await this.pingServer(`${apiUrl}/docs`, "API");
       if (!apiHealthy) {
-        console.log(chalk.red(`\n❌ API is not accessible at: ${apiUrl}/docs\n`));
+        console.log(
+          chalk.red(`\n❌ API is not accessible at: ${apiUrl}/docs\n`),
+        );
         const { shouldContinue } = await inquirer.prompt<{
           shouldContinue: boolean;
         }>([

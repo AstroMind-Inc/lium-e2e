@@ -32,7 +32,9 @@ async function globalSetup(config: FullConfig) {
       // Allow 401/403 since app might require auth, but other errors are problems
       console.error(`❌ Host returned error status: ${response.status}`);
       console.error(`   URL: ${baseUrl}`);
-      console.error(`\n💡 Make sure the app is running before running tests.\n`);
+      console.error(
+        `\n💡 Make sure the app is running before running tests.\n`,
+      );
       process.exit(1);
     }
 
@@ -40,9 +42,7 @@ async function globalSetup(config: FullConfig) {
   } catch (error: any) {
     console.error(`❌ Cannot reach host: ${baseUrl}`);
     console.error(`   Error: ${error.message}`);
-    console.error(
-      `\n💡 Make sure the app is running before running tests.\n`,
-    );
+    console.error(`\n💡 Make sure the app is running before running tests.\n`);
     console.error(`   If using Docker: docker compose up -d`);
     console.error(`   If running locally: npm run dev\n`);
     process.exit(1);
@@ -83,7 +83,10 @@ async function globalSetup(config: FullConfig) {
   }
 
   // Warn if no valid auth sessions (but don't fail - some tests might not need auth)
-  if (!hasValidAuth && (fs.existsSync(adminAuthFile) || fs.existsSync(userAuthFile))) {
+  if (
+    !hasValidAuth &&
+    (fs.existsSync(adminAuthFile) || fs.existsSync(userAuthFile))
+  ) {
     console.log("⚠️  No valid authentication sessions available");
     console.log("   Tests requiring authentication may fail");
     console.log("   Run: make auth-setup-admin or make auth-setup-user\n");
