@@ -1,4 +1,4 @@
-.PHONY: help setup up down test test-synthetic test-integration test-performance test-basic test-auth test-chats test-storage test-agents test-tools test-tenants test-multi-user test-api-health test-api-users test-api-tenants test-api-chats test-api-agents test-api-tools clean credentials results report install test-framework configure auth-setup-admin auth-setup-user auth-setup-all auth-status auth-clear .check-auth
+.PHONY: help setup up down test test-synthetic test-integration test-performance test-multi-user clean credentials results report install test-framework configure auth-setup-admin auth-setup-user auth-setup-all auth-status auth-clear .check-auth
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -24,22 +24,15 @@ help:
 	@echo "  make test           - Interactive test runner (prompts for pillar/env)"
 	@echo "  make up             - Alias for 'make test'"
 	@echo ""
-	@echo "Synthetic Test Modules (fast, focused browser tests):"
-	@echo "  make test-basic     - Basic health checks & smoke tests"
-	@echo "  make test-auth      - Authentication & session tests"
-	@echo "  make test-chats     - Chat functionality tests"
-	@echo "  make test-storage   - Storage & file upload tests"
-	@echo "  make test-agents    - AI agent tests"
-	@echo "  make test-tools     - Tool functionality tests"
-	@echo "  make test-tenants   - Multi-tenancy tests"
+	@echo "Auto-Discovered Test Modules:"
+	@echo "  Synthetic (Browser):    make test-syn-<module>   (e.g., test-syn-basic, test-syn-auth)"
+	@echo "  Integration (API):      make test-api-<module>   (e.g., test-api-health, test-api-users)"
+	@echo "  Performance (Load):     make test-perf-<module>  (e.g., test-perf-load, test-perf-stress)"
 	@echo ""
-	@echo "Integration Test Modules (fast, focused API tests):"
-	@echo "  make test-api-health   - API health checks"
-	@echo "  make test-api-users    - User API endpoints"
-	@echo "  make test-api-tenants  - Tenant API endpoints"
-	@echo "  make test-api-chats    - Chat API endpoints"
-	@echo "  make test-api-agents   - Agent API endpoints"
-	@echo "  make test-api-tools    - Tool API endpoints"
+	@echo "  Modules auto-discovered from filesystem:"
+	@echo "    • synthetic/tests/<module>/     → make test-syn-<module>"
+	@echo "    • integration/tests/<module>/   → make test-api-<module>"
+	@echo "    • performance/tests/<module>/   → make test-perf-<module>"
 	@echo ""
 	@echo "Full Test Suites:"
 	@echo "  make test-synthetic - Run ALL synthetic tests"
@@ -129,59 +122,50 @@ test: .check-auth
 # Alias for intuitive 'up' command
 up: test
 
-# Run module-specific tests
-test-basic: .check-auth
-	@echo "🔍 Running basic tests (health checks)..."
-	@npx playwright test synthetic/tests/basic/
+# Pattern rules for auto-discovered test modules
+# These MUST come after special-case targets (like test-multi-user) to avoid conflicts
 
-test-auth: .check-auth
-	@echo "🔐 Running authentication tests..."
-	@npx playwright test synthetic/tests/auth/
+# Synthetic tests: make test-syn-<module>
+test-syn-%: .check-auth
+	@MODULE_NAME=$(subst test-syn-,,$@); \
+	if [ -d "synthetic/tests/$$MODULE_NAME" ]; then \
+		echo "🧪 Running synthetic/$$MODULE_NAME tests..."; \
+		npx playwright test synthetic/tests/$$MODULE_NAME/; \
+	else \
+		echo "❌ Module 'synthetic/tests/$$MODULE_NAME' not found"; \
+		echo ""; \
+		echo "Available modules:"; \
+		find synthetic/tests/ -maxdepth 1 -type d ! -name "tests" ! -name "_*" -exec basename {} \; | sort | sed 's/^/  - test-syn-/'; \
+		exit 1; \
+	fi
 
-test-chats: .check-auth
-	@echo "💬 Running chat tests..."
-	@npx playwright test synthetic/tests/chats/
+# Integration tests: make test-api-<module>
+test-api-%: .check-auth
+	@MODULE_NAME=$(subst test-api-,,$@); \
+	if [ -d "integration/tests/$$MODULE_NAME" ]; then \
+		echo "🧪 Running integration/$$MODULE_NAME API tests..."; \
+		npx playwright test integration/tests/$$MODULE_NAME/; \
+	else \
+		echo "❌ Module 'integration/tests/$$MODULE_NAME' not found"; \
+		echo ""; \
+		echo "Available modules:"; \
+		find integration/tests/ -maxdepth 1 -type d ! -name "tests" ! -name "_*" -exec basename {} \; | sort | sed 's/^/  - test-api-/'; \
+		exit 1; \
+	fi
 
-test-storage: .check-auth
-	@echo "📁 Running storage tests..."
-	@npx playwright test synthetic/tests/storage/
-
-test-agents: .check-auth
-	@echo "🤖 Running agent tests..."
-	@npx playwright test synthetic/tests/agents/
-
-test-tools: .check-auth
-	@echo "🔧 Running tool tests..."
-	@npx playwright test synthetic/tests/tools/
-
-test-tenants: .check-auth
-	@echo "🏢 Running tenant tests..."
-	@npx playwright test synthetic/tests/tenants/
-
-# Run integration module-specific tests
-test-api-health: .check-auth
-	@echo "🔍 Running API health checks..."
-	@npx playwright test integration/tests/health/
-
-test-api-users: .check-auth
-	@echo "👥 Running user API tests..."
-	@npx playwright test integration/tests/users/
-
-test-api-tenants: .check-auth
-	@echo "🏢 Running tenant API tests..."
-	@npx playwright test integration/tests/tenants/
-
-test-api-chats: .check-auth
-	@echo "💬 Running chat API tests..."
-	@npx playwright test integration/tests/chats/
-
-test-api-agents: .check-auth
-	@echo "🤖 Running agent API tests..."
-	@npx playwright test integration/tests/agents/
-
-test-api-tools: .check-auth
-	@echo "🔧 Running tool API tests..."
-	@npx playwright test integration/tests/tools/
+# Performance tests: make test-perf-<module>
+test-perf-%: .check-auth
+	@MODULE_NAME=$(subst test-perf-,,$@); \
+	if [ -d "performance/tests/$$MODULE_NAME" ]; then \
+		echo "🧪 Running performance/$$MODULE_NAME tests..."; \
+		k6 run performance/tests/$$MODULE_NAME/*.js; \
+	else \
+		echo "❌ Module 'performance/tests/$$MODULE_NAME' not found"; \
+		echo ""; \
+		echo "Available modules:"; \
+		find performance/tests/ -maxdepth 1 -type d ! -name "tests" ! -name "_*" -exec basename {} \; 2>/dev/null | sort | sed 's/^/  - test-perf-/' || echo "  (no modules yet)"; \
+		exit 1; \
+	fi
 
 # Run multi-user flow test (admin + regular user) - HEADLESS
 test-multi-user: .check-auth
