@@ -16,7 +16,10 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 - [x] **Pre-flight checks** - Server health + token validation
 - [x] **Automatic token refresh** - Detects expired tokens, prompts re-auth
 - [x] **Interactive CLI** - `make test` menu for easy test selection
-- [x] **k6 performance testing** - Basic homepage load test POC
+- [x] **k6 performance testing** - Advanced scenarios (baseline, spike, stress)
+- [x] **Module metadata (manifest.yml)** - Optional customization for test modules
+- [x] **Tenant management test suite** - Complete member lifecycle testing
+- [x] **UI discovery methodology** - Automated selector discovery and documentation
 - [x] **Consolidated HTML reports** - All tests in single report
 - [x] **Internal framework tests** - 80%+ coverage for critical utilities
 - [x] **Turn-key operation** - `make setup` → `make test` → done
@@ -26,6 +29,7 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 ## 🚧 In Progress
 
 ### 1. **JSONL Result Persistence**
+
 **Status**: 🟡 Infrastructure Ready, Integration Blocked
 **Priority**: Medium
 **Assignee**: TBD
@@ -33,16 +37,19 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 **Goal**: Historical test result tracking via JSONL files
 
 **What's Done:**
+
 - ✅ ResultWriter/ResultReader classes implemented
 - ✅ ResultsViewer CLI (nice tables, summaries)
 - ✅ JSONL file format defined
 - ✅ Flaky test detection logic
 
 **What's Blocked:**
+
 - ❌ Playwright reporter integration (TypeScript module loading issue)
 - ❌ Global setup not loading (same TS module issue)
 
 **Next Steps:**
+
 1. Compile reporters to JavaScript (workaround)
 2. Or use different integration point (test fixtures)
 3. Enable `make results` CLI command
@@ -52,6 +59,7 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 ---
 
 ### 2. **Screenshot Visibility in Reports**
+
 **Status**: 🔴 Not Working
 **Priority**: **HIGH** ⚠️
 **Assignee**: **URGENT**
@@ -59,6 +67,7 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 **Problem**: Screenshots not visible in HTML reports
 
 **Current Behavior:**
+
 - Screenshots taken (`screenshot: 'on'` in config)
 - But only kept for FAILED tests (Playwright default)
 - Passing tests → artifacts cleaned up → no screenshots in report
@@ -67,11 +76,13 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 **Goal**: See screenshots for ALL tests (passed + failed)
 
 **Options:**
+
 1. **Custom reporter** - Attach screenshots as base64 to HTML
 2. **Force artifact retention** - Configure Playwright to keep all artifacts
 3. **Manual attachment** - Use `test.info().attach()` in tests
 
 **Next Steps:**
+
 1. Investigate Playwright artifact retention settings
 2. Implement custom attachment strategy
 3. Test with passing AND failing tests
@@ -83,6 +94,7 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 ## 📋 Planned Features
 
 ### 3. **Slack Integration**
+
 **Status**: 🔵 Not Started
 **Priority**: High
 **Assignee**: _Another engineer (per user request)_
@@ -90,6 +102,7 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 **Goal**: Post test results to Slack channel
 
 **Features:**
+
 - Slack webhook integration
 - Formatted messages with pass/fail counts
 - Link to HTML report
@@ -97,6 +110,7 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 - Per-environment channels
 
 **Implementation:**
+
 - Stub exists: `shared/reporting/slack-reporter.ts`
 - Needs: Webhook URL config, message formatting, integration into test runs
 
@@ -104,75 +118,46 @@ This roadmap outlines the next big features and enhancements for the Lium E2E te
 
 ---
 
-### 4. **Performance Testing - Expand Coverage**
-**Status**: 🔵 POC Complete, Needs Expansion
+### 2. **Performance Testing - Expand Coverage**
+
+**Status**: 🟢 POC Complete, Ready for Expansion
 **Priority**: Medium
 **Assignee**: TBD
 
 **Current State:**
+
 - ✅ k6 installed and working
-- ✅ Simple homepage load test exists
+- ✅ Advanced API load testing POC complete
+- ✅ Three scenarios implemented: baseline, spike, stress
+- ✅ Custom metrics: error rate, API latency, auth failures
+- ✅ User behavior simulation (read-heavy, balanced, write-heavy)
 - ✅ Auto-discovery pattern rule works
 
-**Goal**: Comprehensive performance test suite
+**Completed Tests:**
 
-**Planned Tests:**
-- API baseline performance (CRUD operations)
-- Stress testing (breaking points)
-- Spike testing (sudden traffic)
-- Endurance testing (sustained load)
-- Scalability validation (concurrent users)
-
-**Scenarios:**
 ```
-performance/tests/
-├── load/
-│   ├── homepage.js       ← Exists
-│   ├── api-baseline.js   ← TODO
-│   └── concurrent-users.js
-├── stress/
-│   ├── api-stress.js
-│   └── database-stress.js
-└── spike/
-    └── traffic-spike.js
+performance/tests/api-load/
+├── simple-baseline.js   ✅ 3-min POC without auth
+├── api-baseline.js      ✅ 8-min production-ready test
+├── manifest.yml         ✅ Module metadata
+├── README.md            ✅ Full documentation
+└── POC-SUMMARY.md       ✅ Performance summary
 ```
 
-**Estimated Effort**: 1-2 days
+**Next Expansion Opportunities:**
+
+- Database query performance tests
+- Service-to-service latency tests
+- WebSocket/real-time performance
+- File upload/download performance
+- Search and filtering performance
+
+**Estimated Effort for Expansion**: 1-2 days
 
 ---
 
-### 5. **Module Metadata (manifest.yml)**
-**Status**: 🔵 Not Started
-**Priority**: Low
-**Assignee**: TBD
+### 3. **CI/CD Integration (GitHub Actions)**
 
-**Goal**: Customizable module metadata via optional config file
-
-**Problem**: Icons, descriptions, tags are hard-coded in `module-scanner.ts`
-
-**Solution**: Read from optional `manifest.yml` in each module directory
-
-**Example:**
-```yaml
-# synthetic/tests/workflows/manifest.yml
-name: Workflows
-description: Complex multi-step user workflows
-icon: 🔄
-tags: [end-to-end, critical, slow]
-estimatedDuration: 2m
-```
-
-**Benefits:**
-- Self-documenting tests
-- Customizable display in CLI
-- Tags for test organization
-- Duration estimates
-
-**Estimated Effort**: 2-3 hours
-
----
-
-### 6. **CI/CD Integration (GitHub Actions)**
 **Status**: 🔵 Not Started
 **Priority**: Medium
 **Assignee**: TBD
@@ -180,6 +165,7 @@ estimatedDuration: 2m
 **Goal**: Automated test runs on PR/merge
 
 **Features:**
+
 - Run tests on every PR
 - Post results as PR comment
 - Block merge if tests fail
@@ -187,6 +173,7 @@ estimatedDuration: 2m
 - Upload artifacts (reports, screenshots)
 
 **Workflow:**
+
 ```yaml
 name: E2E Tests
 on: [pull_request, schedule]
@@ -207,7 +194,8 @@ jobs:
 
 ---
 
-### 7. **Visual Regression Testing**
+### 4. **Visual Regression Testing**
+
 **Status**: 🔵 Not Started
 **Priority**: Low
 **Assignee**: TBD
@@ -215,16 +203,18 @@ jobs:
 **Goal**: Detect unintended UI changes
 
 **Implementation:**
+
 - Use Playwright's visual comparison
 - Store baseline screenshots
 - Diff on each run
 - Threshold for acceptable changes
 
 **Example:**
+
 ```typescript
-test('homepage looks correct', async ({ page }) => {
-  await page.goto('/');
-  await expect(page).toHaveScreenshot('homepage.png', {
+test("homepage looks correct", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveScreenshot("homepage.png", {
     maxDiffPixels: 100,
   });
 });
@@ -234,7 +224,8 @@ test('homepage looks correct', async ({ page }) => {
 
 ---
 
-### 8. **Test Data Management**
+### 5. **Test Data Management**
+
 **Status**: 🔵 Not Started
 **Priority**: Low
 **Assignee**: TBD
@@ -246,24 +237,26 @@ test('homepage looks correct', async ({ page }) => {
 **Solution**: Test data factories
 
 **Example:**
+
 ```typescript
 // shared/factories/user-factory.ts
 export const createTestUser = (overrides) => ({
   email: faker.internet.email(),
   name: faker.person.fullName(),
-  role: 'user',
+  role: "user",
   ...overrides,
 });
 
 // In test:
-const user = await createTestUser({ role: 'admin' });
+const user = await createTestUser({ role: "admin" });
 ```
 
 **Estimated Effort**: 2-3 hours
 
 ---
 
-### 9. **Mobile Testing (BrowserStack)**
+### 6. **Mobile Testing (BrowserStack)**
+
 **Status**: 🔵 Not Started
 **Priority**: Low
 **Assignee**: TBD
@@ -271,6 +264,7 @@ const user = await createTestUser({ role: 'admin' });
 **Goal**: Test on real mobile devices
 
 **Integration:**
+
 - BrowserStack or Sauce Labs
 - iOS and Android devices
 - Mobile viewports already supported in Playwright
@@ -279,7 +273,8 @@ const user = await createTestUser({ role: 'admin' });
 
 ---
 
-### 10. **AI-Powered Analysis**
+### 7. **AI-Powered Analysis**
+
 **Status**: 🔵 Not Started
 **Priority**: Low (Future)
 **Assignee**: TBD
@@ -287,6 +282,7 @@ const user = await createTestUser({ role: 'admin' });
 **Goal**: Intelligent test insights
 
 **Features:**
+
 - Flaky test identification (ML-based)
 - Suggested fixes for failures
 - Test optimization recommendations
@@ -298,72 +294,57 @@ const user = await createTestUser({ role: 'admin' });
 
 ## 🔥 Critical Bugs / Issues
 
-### Issue #1: Screenshot Visibility
-**Status**: 🔴 **URGENT**
-**Severity**: High
-**Impact**: User cannot verify test behavior visually
-
-See "In Progress #2" above for details.
-
-### Issue #2: Report Showing Random Tests
-**Status**: 🔴 **URGENT**
-**Severity**: High
-**Impact**: User cannot see full test results
-
-**Problem**: Report seems to show random subset of tests
-
-**Investigation Needed:**
-- Check if reports are being overwritten
-- Verify test-results directory retention
-- Ensure all test runs append to same report
-
-**Next Steps:**
-1. Reproduce issue
-2. Check Playwright reporter configuration
-3. Verify test execution logs
+_No critical bugs at this time._
 
 ---
 
 ## 📊 Prioritization
 
 **Immediate (This Week):**
-1. 🔴 Fix screenshot visibility (#2)
-2. 🔴 Fix report showing all tests (Issue #2)
+
+1. 🟡 JSONL result persistence (#1)
 
 **Short-term (Next 2 Weeks):**
-1. 🟡 JSONL result persistence (#1)
-2. 🔵 Slack integration (#3)
-3. 🔵 Performance test expansion (#4)
+
+1. 🔵 Performance test expansion (#2)
+2. 🔵 Slack integration (moved from #3)
+3. 🔵 CI/CD integration (#3)
 
 **Medium-term (Next Month):**
-1. 🔵 Module metadata manifest.yml (#5)
-2. 🔵 CI/CD integration (#6)
+
+1. 🔵 Visual regression (#4)
+2. 🔵 Test data factories (#5)
 
 **Long-term (Future):**
-1. 🔵 Visual regression (#7)
-2. 🔵 Test data factories (#8)
-3. 🔵 Mobile testing (#9)
-4. 🔵 AI-powered analysis (#10)
+
+1. 🔵 Mobile testing (#6)
+2. 🔵 AI-powered analysis (#7)
 
 ---
 
 ## 🎯 Success Metrics
 
 **Current State (v1.0):**
+
 - ✅ 10+ test modules across 3 pillars
 - ✅ Auto-discovery system working
 - ✅ Saved auth sessions (headless tests)
 - ✅ Pre-flight checks (server health + tokens)
 - ✅ 80%+ internal framework test coverage
+- ✅ Module metadata via manifest.yml
+- ✅ Advanced performance testing (baseline, spike, stress)
+- ✅ Tenant management test suite
+- ✅ UI discovery methodology
 
 **Goals (v1.5):**
+
 - 📊 JSONL historical tracking working
-- 📸 Screenshots visible for all tests
 - 💬 Slack integration active
-- 🚀 10+ performance test scenarios
+- 🚀 15+ performance test scenarios
 - 🔄 CI/CD pipeline running
 
 **Goals (v2.0):**
+
 - 📈 Visual regression testing
 - 🤖 AI-powered flaky test detection
 - 📱 Mobile device testing

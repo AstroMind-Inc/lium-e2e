@@ -52,10 +52,10 @@ make test-integration    # Run all API tests
 
 ```typescript
 // integration/tests/health/api-health.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('API is accessible', async ({ request }) => {
-  const baseUrl = process.env.API_BASE_URL || 'http://lium-api:8000';
+test("API is accessible", async ({ request }) => {
+  const baseUrl = process.env.API_BASE_URL || "http://lium-api:8000";
 
   const response = await request.get(`${baseUrl}/health`);
 
@@ -67,10 +67,10 @@ test('API is accessible', async ({ request }) => {
 
 ```typescript
 // integration/tests/users/get-users.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('GET /api/users returns user list', async ({ request }) => {
-  const baseUrl = process.env.API_BASE_URL || 'http://lium-api:8000';
+test("GET /api/users returns user list", async ({ request }) => {
+  const baseUrl = process.env.API_BASE_URL || "http://lium-api:8000";
 
   const response = await request.get(`${baseUrl}/api/users`, {
     headers: {
@@ -105,16 +105,16 @@ Configure in `config/environments/*.json`:
 Future implementation will validate responses against OpenAPI spec:
 
 ```typescript
-import { validateResponse } from '../helpers/openapi-validator';
+import { validateResponse } from "../helpers/openapi-validator";
 
-test('response matches OpenAPI spec', async ({ request }) => {
-  const response = await request.get('/api/users');
+test("response matches OpenAPI spec", async ({ request }) => {
+  const response = await request.get("/api/users");
 
   const validation = await validateResponse(
-    'backend-api.yml',
-    'GET',
-    '/api/users',
-    response
+    "backend-api.yml",
+    "GET",
+    "/api/users",
+    response,
   );
 
   expect(validation.valid).toBe(true);

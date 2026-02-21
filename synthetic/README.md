@@ -5,6 +5,7 @@ Playwright-based browser automation tests simulating real user interactions with
 ## Overview
 
 Synthetic tests use Playwright to:
+
 - Test user flows through the application
 - Validate Auth0 authentication
 - Verify UI behavior and navigation
@@ -26,6 +27,7 @@ synthetic/
 ## Running Tests
 
 ### Via Makefile
+
 ```bash
 # Run all synthetic tests
 make test-synthetic
@@ -35,6 +37,7 @@ E2E_ENVIRONMENT=dev make test-synthetic
 ```
 
 ### Via npm
+
 ```bash
 # Run all tests
 cd synthetic && npx playwright test
@@ -50,6 +53,7 @@ cd synthetic && npx playwright test --project=chromium
 ```
 
 ### Via Playwright UI
+
 ```bash
 # Open Playwright UI for debugging
 cd synthetic && npx playwright test --ui
@@ -60,11 +64,11 @@ cd synthetic && npx playwright test --ui
 ### Basic Test Structure
 
 ```typescript
-import { test, expect } from '../fixtures/index.js';
-import { DashboardPage } from '../page-objects/DashboardPage.js';
+import { test, expect } from "../fixtures/index.js";
+import { DashboardPage } from "../page-objects/DashboardPage.js";
 
-test.describe('My Feature', () => {
-  test('should do something', async ({ page, envConfig }) => {
+test.describe("My Feature", () => {
+  test("should do something", async ({ page, envConfig }) => {
     const dashboardPage = new DashboardPage(page, envConfig);
 
     await dashboardPage.goto();
@@ -76,7 +80,7 @@ test.describe('My Feature', () => {
 ### Using Authenticated Page Fixture
 
 ```typescript
-test('should access protected feature', async ({
+test("should access protected feature", async ({
   page,
   authenticatedPage, // Page is already logged in
   envConfig,
@@ -90,9 +94,9 @@ test('should access protected feature', async ({
 ### Using Page Objects
 
 ```typescript
-import { LoginPage } from '../page-objects/LoginPage.js';
+import { LoginPage } from "../page-objects/LoginPage.js";
 
-test('should login', async ({ page, envConfig, credentials }) => {
+test("should login", async ({ page, envConfig, credentials }) => {
   const loginPage = new LoginPage(page, envConfig);
 
   await loginPage.goto();
@@ -124,9 +128,9 @@ All page objects extend `BasePage` which provides:
 ### Creating a Page Object
 
 ```typescript
-import { BasePage } from './BasePage.js';
-import type { Page } from '@playwright/test';
-import type { EnvironmentConfig } from '../../shared/types/index.js';
+import { BasePage } from "./BasePage.js";
+import type { Page } from "@playwright/test";
+import type { EnvironmentConfig } from "../../shared/types/index.js";
 
 export class MyPage extends BasePage {
   private selectors = {
@@ -138,7 +142,7 @@ export class MyPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await super.goto('/my-page');
+    await super.goto("/my-page");
   }
 
   async clickMyButton(): Promise<void> {
@@ -165,6 +169,7 @@ E2E_ENVIRONMENT=staging npx playwright test
 Tests automatically load credentials from `./credentials/{environment}.json`.
 
 Setup credentials:
+
 ```bash
 make credentials
 ```
@@ -172,21 +177,25 @@ make credentials
 ## Debugging
 
 ### Debug in headed mode
+
 ```bash
 cd synthetic && npx playwright test --headed --debug
 ```
 
 ### View trace files
+
 ```bash
 cd synthetic && npx playwright show-trace ../test-results/trace.zip
 ```
 
 ### Screenshots on failure
+
 Screenshots are automatically saved to `../reports/screenshots/` on test failure.
 
 ## CI/CD
 
 Tests are configured to run in CI with:
+
 - Retries: 2
 - Workers: 1 (sequential)
 - Video: On failure
@@ -205,13 +214,16 @@ Tests are configured to run in CI with:
 ## Common Issues
 
 **"Cannot find credentials"**
+
 - Solution: Run `make credentials` to setup credentials
 
 **"Navigation timeout"**
+
 - Solution: Increase timeout in `playwright.config.ts` or specific test
 - Check if the URL in `envConfig` is correct
 
 **"Auth0 login failed"**
+
 - Solution: Verify credentials are correct for the environment
 - Check Auth0 domain in environment config
 

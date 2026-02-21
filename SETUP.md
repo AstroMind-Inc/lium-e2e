@@ -15,6 +15,7 @@ make setup
 ```
 
 This will:
+
 1. Install Node dependencies
 2. Install Playwright browsers
 3. Create necessary directories
@@ -71,6 +72,7 @@ make configure
 This reads `lium/apps/web/.env.local` and updates all environment configs automatically.
 
 **Already configured:**
+
 - `local.json` - Docker services (http://lium-web:3000)
 - `dev.json` - Dev environment (https://app.dev.lium.ai)
 - `sandbox.json` - Sandbox (https://app.sandbox.lium.ai)
@@ -85,6 +87,7 @@ make test-basic          # Uses local environment by default
 ```
 
 **Requirements:**
+
 - Docker running with `lium-web` and `lium-api` containers
 - Accessible at `http://lium-web:3000` and `http://lium-api:8000`
 
@@ -97,6 +100,7 @@ E2E_ENVIRONMENT=dev make test-basic
 ```
 
 **Requirements for dev/sandbox/staging:**
+
 - VPN connected (APIs not public)
 - Authenticated for that environment
 - Network access to `app.{env}.lium.ai`
@@ -125,7 +129,7 @@ make auth-setup-admin    # Admin (@astromind.com)
 make auth-setup-user     # Regular user (non-@astromind.com)
 ```
 
-Tests will use admin auth by default. Use `make test-multi-user` for tests that need both.
+Tests will use admin auth by default. Multi-user tests are in `synthetic/tests/auth/`.
 
 ## File Structure After Setup
 
@@ -162,6 +166,7 @@ npx playwright install chromium
 ### "Connection refused" (local tests)
 
 Check Docker containers are running:
+
 ```bash
 docker ps | grep lium
 ```
@@ -171,6 +176,7 @@ Should see `lium-web` and `lium-api`.
 ### Tests fail with 401/403 errors
 
 Session expired. Re-authenticate:
+
 ```bash
 make auth-clear
 make auth-setup-admin
@@ -179,6 +185,7 @@ make auth-setup-admin
 ### "No report found"
 
 Run tests first:
+
 ```bash
 make test-basic
 make report

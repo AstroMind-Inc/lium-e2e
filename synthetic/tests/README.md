@@ -22,10 +22,12 @@ touch synthetic/tests/my-module/my-test.spec.ts
 ## Module Discovery Rules
 
 **Included:**
+
 - Any directory with `*.spec.ts` files
 - Directories without special prefixes
 
 **Excluded:**
+
 - Directories starting with `_` (e.g., `_examples`, `_future`)
 - Special directories: `user-flows`, `helpers`, `fixtures`, `utils`
 - Empty directories (no test files)

@@ -34,6 +34,7 @@ That's it! Add test files to any module folder and they're automatically discove
 ## ✨ What's New
 
 ### Auto-Discovery System
+
 **Add a folder → Tests appear automatically**
 
 ```bash
@@ -51,6 +52,7 @@ No code changes. No config updates. Just works.
 ### Smart Pre-Flight Checks
 
 Before every test run:
+
 1. 🏥 **Server health check** - Ensures app/API is running
 2. 🔍 **Token validation** - Auto-refreshes expired auth sessions
 3. 🚀 **Tests** - Only runs if checks pass
@@ -59,11 +61,11 @@ No more mysterious failures from expired tokens or servers being down!
 
 ### Three Test Pillars
 
-| Pillar | What It Tests | Command Pattern |
-|--------|---------------|-----------------|
-| **Synthetic** | Browser automation, user flows | `make test-syn-<module>` |
-| **Integration** | API endpoints, contracts | `make test-api-<module>` |
-| **Performance** | Load, stress, throughput | `make test-perf-<module>` |
+| Pillar          | What It Tests                  | Command Pattern           |
+| --------------- | ------------------------------ | ------------------------- |
+| **Synthetic**   | Browser automation, user flows | `make test-syn-<module>`  |
+| **Integration** | API endpoints, contracts       | `make test-api-<module>`  |
+| **Performance** | Load, stress, throughput       | `make test-perf-<module>` |
 
 ---
 
@@ -74,13 +76,14 @@ No more mysterious failures from expired tokens or servers being down!
 Auto-discovered from `synthetic/tests/`:
 
 ```bash
-make test-syn-basic      # Health checks & smoke tests
-make test-syn-auth       # Authentication flows
-make test-syn-chats      # Chat functionality
-make test-syn-storage    # File uploads & storage
-make test-syn-agents     # AI agent tests
-make test-syn-tools      # Tool functionality
-make test-syn-tenants    # Multi-tenancy
+make test-syn-basic              # Health checks & smoke tests
+make test-syn-auth               # Authentication flows
+make test-syn-tenant-management  # Multi-tenant member lifecycle
+make test-syn-chats              # Chat functionality
+make test-syn-storage            # File uploads & storage
+make test-syn-agents             # AI agent tests
+make test-syn-tools              # Tool functionality
+make test-syn-tenants            # Multi-tenancy
 ```
 
 ### Integration (API Tests)
@@ -101,15 +104,40 @@ make test-api-tenants    # Tenant API
 Auto-discovered from `performance/tests/`:
 
 ```bash
-make test-perf-homepage  # Homepage load test
-make test-perf-api       # API baseline performance
+make test-perf-api-health  # API health endpoint load test
+make test-perf-api-load    # API comprehensive load testing
+make test-perf-api-spike   # API sudden traffic spike testing
+make test-perf-api-stress  # API stress test (find breaking point)
 ```
 
 **Or use the interactive menu:**
+
 ```bash
 make test
 # → Select pillar → Select module → Select environment → Run!
 ```
+
+### Customizing Module Metadata
+
+Each test module can optionally include a `manifest.yml` file to customize its display:
+
+```yaml
+# synthetic/tests/auth/manifest.yml
+name: Authentication
+description: OAuth2/Auth0 login flows and session management
+icon: 🔐
+tags:
+  - critical
+  - auth
+  - oauth
+```
+
+**Benefits:**
+
+- **Self-documenting**: Test modules describe themselves
+- **Customizable display**: Control name, icon, description shown in CLI
+- **Tags**: Organize and filter tests (e.g., "critical", "slow")
+- **Fallback**: If no manifest exists, uses directory name with defaults
 
 ---
 
@@ -129,6 +157,7 @@ Opens browser → You log in via OAuth → Session saved forever
 **The framework now handles token expiry automatically!**
 
 Before each test run:
+
 - ✓ Checks if tokens are still valid
 - ✓ Auto-refreshes if expired (when possible)
 - ✓ Prompts you to re-auth if refresh fails
@@ -147,6 +176,7 @@ make auth-clear          # Clear sessions (to re-authenticate)
 ## 🛠️ All Commands
 
 ### Setup
+
 ```bash
 make setup               # Initial setup (deps, dirs, k6, auth)
 make install             # Install/update dependencies
@@ -154,6 +184,7 @@ make configure           # Configure Auth0 from lium-web
 ```
 
 ### Authentication
+
 ```bash
 make auth-setup-admin    # Admin (@astromind.com) authentication
 make auth-setup-user     # Regular user authentication
@@ -163,6 +194,7 @@ make auth-clear          # Clear all saved sessions
 ```
 
 ### Testing - Interactive
+
 ```bash
 make test                # Interactive test runner (recommended!)
 make up                  # Alias for 'make test'
@@ -179,6 +211,7 @@ make test-perf-<module>  # Performance: performance/tests/<module>/
 ```
 
 Examples:
+
 ```bash
 make test-syn-basic      # Basic health checks
 make test-api-users      # User API tests
@@ -186,25 +219,28 @@ make test-perf-homepage  # Homepage load test
 ```
 
 ### Testing - Full Suites
+
 ```bash
-make test-synthetic      # All browser tests
-make test-integration    # All API tests
-make test-performance    # All performance tests
-make test-framework      # Internal framework tests
+make test-syn-all        # Run ALL synthetic tests (fast, headless)
+make test-api-all        # Run ALL integration tests (fast, headless)
+make test-perf-all       # Run ALL performance tests
 ```
 
-### Special Tests
+### Quality Checks
+
 ```bash
-make test-multi-user     # Admin + user flow (headless)
+make preflight           # Run all quality checks (format, lint, test, coverage)
 ```
 
 ### Results
+
 ```bash
 make report              # Open interactive HTML report ⭐
 make results             # CLI summary (future: requires JSONL)
 ```
 
 ### Cleanup
+
 ```bash
 make clean               # Remove node_modules & artifacts
 make down                # Stop running tests
@@ -234,6 +270,7 @@ lium-e2e/
 │   ├── tests/               # 📂 Auto-discovered modules
 │   │   ├── basic/           # Health checks
 │   │   ├── auth/            # Auth flows
+│   │   ├── tenant-management/ # Multi-tenant member lifecycle
 │   │   ├── chats/           # Chat functionality
 │   │   ├── storage/         # File uploads
 │   │   ├── agents/          # AI agents
@@ -254,8 +291,21 @@ lium-e2e/
 │
 ├── performance/             # Pillar 3: Performance tests (k6)
 │   └── tests/               # 📂 Auto-discovered modules
-│       └── homepage/        # Homepage load test
-│           └── homepage.js
+│       ├── api-health/      # Health endpoint load test
+│       │   ├── test.js
+│       │   └── manifest.yml
+│       ├── api-load/        # Comprehensive load testing
+│       │   ├── test.js              # Simple baseline (default)
+│       │   ├── advanced.js          # Production-ready scenarios
+│       │   ├── manifest.yml
+│       │   ├── README.md
+│       │   └── POC-SUMMARY.md
+│       ├── api-spike/       # Spike testing
+│       │   ├── test.js
+│       │   └── manifest.yml
+│       └── api-stress/      # Stress testing
+│           ├── test.js
+│           └── manifest.yml
 │
 ├── shared/                  # Shared utilities
 │   ├── auth/                # Auth helpers (Auth0, OAuth, JWT)
@@ -292,22 +342,52 @@ Create tests in any module under `synthetic/tests/`:
 
 ```typescript
 // synthetic/tests/my-feature/test.spec.ts
-import { test, expect } from '../../fixtures/index.js';
+import { test, expect } from "../../fixtures/index.js";
 
-test.describe('My Feature', () => {
-  test('can do something', async ({ page, envConfig }) => {
+test.describe("My Feature", () => {
+  test("can do something", async ({ page, envConfig }) => {
     // Already authenticated via saved session!
     await page.goto(`${envConfig.baseUrls.web}/my-feature`);
 
     await page.click('[data-testid="action-button"]');
-    await expect(page.locator('.result')).toBeVisible();
+    await expect(page.locator(".result")).toBeVisible();
   });
 });
 ```
 
 **Auto-discovered immediately:**
+
 - `make test-syn-my-feature` works
 - Shows in `make test` menu
+
+### UI Discovery Methodology
+
+When writing tests for new UI features, use automated discovery tests to find correct selectors:
+
+1. **Create discovery test** to explore the UI:
+
+```typescript
+test("discover UI elements", async ({ page }) => {
+  await page.goto("/");
+
+  // Log all buttons
+  const buttons = await page.locator("button").all();
+  for (const btn of buttons) {
+    const text = await btn.textContent();
+    const ariaLabel = await btn.getAttribute("aria-label");
+    console.log(`Button: "${text}" [aria-label="${ariaLabel}"]`);
+  }
+
+  // Take screenshot for reference
+  await page.screenshot({ path: "discovery.png", fullPage: true });
+});
+```
+
+2. **Run the discovery test** to examine output
+3. **Document verified selectors** in `SELECTORS.md`
+4. **Write production tests** using verified selectors
+
+**Example**: See `synthetic/tests/tenant-management/SELECTORS.md` for documented selectors
 
 ### Integration (API) Tests
 
@@ -315,18 +395,19 @@ Create tests in any module under `integration/tests/`:
 
 ```typescript
 // integration/tests/my-api/test.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('GET /my-endpoint returns 200', async ({ request }) => {
-  const response = await request.get('/my-endpoint');
+test("GET /my-endpoint returns 200", async ({ request }) => {
+  const response = await request.get("/my-endpoint");
 
   expect(response.ok()).toBeTruthy();
   const body = await response.json();
-  expect(body).toHaveProperty('data');
+  expect(body).toHaveProperty("data");
 });
 ```
 
 **Auto-discovered immediately:**
+
 - `make test-api-my-api` works
 - Shows in `make test` menu
 
@@ -336,29 +417,80 @@ Create tests in any module under `performance/tests/`:
 
 ```javascript
 // performance/tests/my-load/test.js
-import http from 'k6/http';
-import { check } from 'k6';
+import http from "k6/http";
+import { check } from "k6";
 
 export const options = {
   stages: [
-    { duration: '30s', target: 10 },  // Ramp up
-    { duration: '1m', target: 10 },   // Stay
-    { duration: '30s', target: 0 },   // Ramp down
+    { duration: "30s", target: 10 }, // Ramp up
+    { duration: "1m", target: 10 }, // Stay
+    { duration: "30s", target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<500'],  // 95% < 500ms
+    http_req_duration: ["p(95)<500"], // 95% < 500ms
   },
 };
 
 export default function () {
-  const res = http.get(process.env.BASE_URL || 'http://localhost:3000');
-  check(res, { 'status is 200': (r) => r.status === 200 });
+  const res = http.get(process.env.BASE_URL || "http://localhost:3000");
+  check(res, { "status is 200": (r) => r.status === 200 });
 }
 ```
 
 **Auto-discovered immediately:**
+
 - `make test-perf-my-load` works
 - Shows in `make test` menu
+
+### Performance Testing Features
+
+Comprehensive k6 performance testing with multiple scenarios:
+
+**Test Scenarios:**
+
+- **Baseline** (Constant Load) - Establish normal performance
+
+  ```javascript
+  executor: "constant-vus";
+  vus: 10;
+  duration: "2m";
+  ```
+
+- **Spike** (Sudden Traffic) - Test system resilience
+
+  ```javascript
+  stages: [
+    { duration: "10s", target: 50 }, // Spike up
+    { duration: "30s", target: 50 }, // Sustain
+    { duration: "10s", target: 0 }, // Ramp down
+  ];
+  ```
+
+- **Stress** (Find Limits) - Gradually increase to find breaking point
+  ```javascript
+  stages: [
+    { duration: "1m", target: 20 },
+    { duration: "1m", target: 40 },
+    { duration: "1m", target: 60 },
+    { duration: "1m", target: 80 },
+  ];
+  ```
+
+**User Behavior Simulation:**
+
+- 50% Read-Heavy: Browsing, listing, viewing
+- 30% Balanced: Mix of reads and writes
+- 20% Write-Heavy: Creating, updating, uploading
+
+**Custom Metrics:**
+
+```javascript
+const errorRate = new Rate("errors");
+const apiLatency = new Trend("api_latency");
+const authFailures = new Counter("auth_failures");
+```
+
+**See**: `performance/tests/api-load/POC-SUMMARY.md` for full details
 
 ---
 
@@ -366,14 +498,15 @@ export default function () {
 
 Configure in `config/environments/`:
 
-| Environment | File | URL Example |
-|-------------|------|-------------|
-| Local | `local.json` | `http://lium-web:3000` (Docker) |
-| Dev | `dev.json` | `https://dev.lium.app` |
-| Sandbox | `sandbox.json` | `https://sandbox.lium.app` |
-| Staging | `staging.json` | `https://staging.lium.app` |
+| Environment | File           | URL Example                     |
+| ----------- | -------------- | ------------------------------- |
+| Local       | `local.json`   | `http://lium-web:3000` (Docker) |
+| Dev         | `dev.json`     | `https://dev.lium.app`          |
+| Sandbox     | `sandbox.json` | `https://sandbox.lium.app`      |
+| Staging     | `staging.json` | `https://staging.lium.app`      |
 
 Select environment:
+
 - **Interactively**: `make test` → Choose environment
 - **Directly**: `E2E_ENVIRONMENT=dev make test-syn-basic`
 
@@ -388,6 +521,7 @@ make report
 ```
 
 Shows:
+
 - ✅ Pass/fail status for all tests
 - 📸 Screenshots (for failed tests)
 - 🎥 Videos (for failed tests)
@@ -409,14 +543,17 @@ Future: JSONL-based historical tracking and trend analysis.
 ## 🐛 Troubleshooting
 
 ### "No auth session found"
+
 ```bash
 make auth-setup-admin
 ```
 
 ### "Authentication expired"
+
 **The framework now auto-checks this before tests!**
 
 If auto-refresh fails, you'll see:
+
 ```
 ⚠️  Authentication sessions expired and could not be refreshed
 ? Would you like to re-authenticate now? (Y/n)
@@ -425,9 +562,11 @@ If auto-refresh fails, you'll see:
 Choose Yes, then run the suggested command.
 
 ### "Web app is not accessible"
+
 **The framework now checks server health before tests!**
 
 Make sure your app is running:
+
 ```bash
 cd lium/apps/web && npm run dev
 # or
@@ -435,6 +574,7 @@ docker-compose up
 ```
 
 ### "k6 is not installed"
+
 ```bash
 brew install k6  # macOS
 ```
@@ -442,15 +582,18 @@ brew install k6  # macOS
 During `make setup`, k6 install is prompted automatically.
 
 ### "No HTML report found"
+
 ```bash
 make test-syn-basic  # Run tests first
 make report          # Then view report
 ```
 
 ### Tests running in headed mode (browser visible)
+
 By default, tests run **headless** (fast, no browser window).
 
 To run headed (browser visible):
+
 ```bash
 # Add --headed flag in playwright.config.ts or:
 npx playwright test --headed synthetic/tests/basic/
@@ -468,22 +611,31 @@ npx playwright test --headed synthetic/tests/basic/
 
 ---
 
-## 🧪 Testing the Framework Itself
+## 🧪 Quality Checks (Preflight)
 
-The framework has **internal unit tests** to ensure reliability:
+The framework has **internal quality checks** to ensure reliability:
 
 ```bash
-make test-framework
+make preflight           # Run all checks (format + lint + test + coverage)
 ```
 
-Tests coverage:
+**Preflight checks:**
+
+1. **Formatting** - Prettier auto-formats all code
+2. **Linting** - ESLint with auto-fix for code quality
+3. **Unit Tests** - 122 tests ensuring framework reliability
+4. **Coverage** - 88.55% coverage (exceeds 80% goal)
+
+Tests cover:
+
 - Credential management
 - Environment selection
 - Result persistence (JSONL)
-- Auth helpers
+- Auth helpers (Auth0, OAuth, JWT)
 - CLI utilities
+- Slack reporting
 
-**Goal**: 80%+ coverage for critical utilities
+**Current Coverage**: 88.55% (✅ exceeds 80% threshold)
 
 ---
 
@@ -518,11 +670,13 @@ The `ModuleScanner` class automatically finds test modules:
 ```
 
 **Magic happens in:**
+
 - `shared/test-discovery/module-scanner.ts` - Filesystem scanning
 - `Makefile` - Pattern rules (`test-syn-%`, `test-api-%`, `test-perf-%`)
 - `ui/cli/prompts.ts` - Dynamic menu generation
 
 **Benefits:**
+
 - Add folder → Command works immediately
 - No code changes needed
 - Scalable to unlimited modules
