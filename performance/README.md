@@ -5,6 +5,7 @@ Load and performance testing using k6 by Grafana.
 ## Overview
 
 Performance tests validate system behavior under load. They measure:
+
 - Response times under various load conditions
 - System throughput and capacity
 - Breaking points and bottlenecks
@@ -14,6 +15,7 @@ Performance tests validate system behavior under load. They measure:
 ## Why k6?
 
 k6 is purpose-built for performance testing:
+
 - **High performance**: Written in Go, can generate massive load
 - **JavaScript/ES6**: Familiar scripting language
 - **Built-in metrics**: Request duration, throughput, error rates
@@ -39,11 +41,13 @@ performance/
 ## Installation
 
 ### macOS (Homebrew)
+
 ```bash
 brew install k6
 ```
 
 ### Linux (Debian/Ubuntu)
+
 ```bash
 sudo gpg -k
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
@@ -53,16 +57,19 @@ sudo apt-get install k6
 ```
 
 ### Windows (Chocolatey)
+
 ```bash
 choco install k6
 ```
 
 ### Docker
+
 ```bash
 docker pull grafana/k6:latest
 ```
 
 ### Verify Installation
+
 ```bash
 k6 version
 ```
@@ -70,25 +77,33 @@ k6 version
 ## Test Types
 
 ### 1. Load Tests (Baseline)
+
 Establish performance baseline with constant load:
+
 - **Goal**: Understand normal performance characteristics
 - **When**: Before and after releases
 - **Example**: `performance/tests/load/api-baseline.js`
 
 ### 2. Stress Tests
+
 Gradually increase load to find breaking point:
+
 - **Goal**: Identify system limits and bottlenecks
 - **When**: Capacity planning, architecture changes
 - **Example**: `performance/tests/stress/api-stress.js`
 
 ### 3. Spike Tests
+
 Sudden traffic spike to test resilience:
+
 - **Goal**: Verify system handles sudden load increases
 - **When**: Before major launches, sales events
 - **Example**: `performance/tests/spike/api-spike.js`
 
 ### 4. Soak Tests (Endurance)
+
 Sustained load over extended period:
+
 - **Goal**: Detect memory leaks, resource exhaustion
 - **When**: Major releases, infrastructure changes
 - **Example**: Use `soakTest` scenario
@@ -96,6 +111,7 @@ Sustained load over extended period:
 ## Running Tests
 
 ### Basic Execution
+
 ```bash
 # Run a test
 k6 run performance/tests/load/api-baseline.js
@@ -108,24 +124,28 @@ API_BASE_URL=https://api-dev.lium.app k6 run performance/tests/load/api-baseline
 ```
 
 ### With Authentication
+
 ```bash
 # Provide auth token
 AUTH_TOKEN=your-token-here k6 run performance/tests/load/api-baseline.js
 ```
 
 ### Override VUs and Duration
+
 ```bash
 # 50 VUs for 5 minutes
 k6 run --vus 50 --duration 5m performance/tests/load/api-baseline.js
 ```
 
 ### Custom Stages
+
 ```bash
 # Custom ramp pattern
 k6 run --stage 1m:10,3m:50,1m:0 performance/tests/load/api-baseline.js
 ```
 
 ### Output Results
+
 ```bash
 # JSON output
 k6 run --out json=results.json performance/tests/load/api-baseline.js
@@ -138,6 +158,7 @@ k6 run --out influxdb=http://localhost:8086/k6 performance/tests/load/api-baseli
 ```
 
 ### Cloud Integration
+
 ```bash
 # k6 Cloud (requires account)
 k6 cloud performance/tests/load/api-baseline.js
@@ -148,23 +169,23 @@ k6 cloud performance/tests/load/api-baseline.js
 ### Basic Test Structure
 
 ```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from "k6/http";
+import { check, sleep } from "k6";
 
 export const options = {
   vus: 10,
-  duration: '30s',
+  duration: "30s",
   thresholds: {
-    http_req_duration: ['p(95)<500'],
+    http_req_duration: ["p(95)<500"],
   },
 };
 
 export default function () {
-  const res = http.get('https://api.example.com/health');
+  const res = http.get("https://api.example.com/health");
 
   check(res, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 500ms': (r) => r.timings.duration < 500,
+    "status is 200": (r) => r.status === 200,
+    "response time < 500ms": (r) => r.timings.duration < 500,
   });
 
   sleep(1);
@@ -174,13 +195,13 @@ export default function () {
 ### Using Custom Metrics
 
 ```javascript
-import { Rate, Trend, Counter, Gauge } from 'k6/metrics';
+import { Rate, Trend, Counter, Gauge } from "k6/metrics";
 
 // Define metrics
-const errorRate = new Rate('errors');
-const apiDuration = new Trend('api_duration');
-const successCounter = new Counter('successes');
-const activeUsers = new Gauge('active_users');
+const errorRate = new Rate("errors");
+const apiDuration = new Trend("api_duration");
+const successCounter = new Counter("successes");
+const activeUsers = new Gauge("active_users");
 
 export default function () {
   const res = http.get(url);
@@ -203,19 +224,19 @@ export default function () {
 export const options = {
   thresholds: {
     // 95th percentile < 500ms
-    http_req_duration: ['p(95)<500'],
+    http_req_duration: ["p(95)<500"],
 
     // 99th percentile < 1s
-    'http_req_duration{name:users}': ['p(99)<1000'],
+    "http_req_duration{name:users}": ["p(99)<1000"],
 
     // Error rate < 1%
-    http_req_failed: ['rate<0.01'],
+    http_req_failed: ["rate<0.01"],
 
     // Successful requests > 95%
-    checks: ['rate>0.95'],
+    checks: ["rate>0.95"],
 
     // Custom metric threshold
-    errors: ['rate<0.05'],
+    errors: ["rate<0.05"],
   },
 };
 ```
@@ -223,7 +244,11 @@ export const options = {
 ### Scenarios
 
 ```javascript
-import { baselineLoad, stressTest, spikeTest } from '../scenarios/load-profile.js';
+import {
+  baselineLoad,
+  stressTest,
+  spikeTest,
+} from "../scenarios/load-profile.js";
 
 export const options = {
   scenarios: {
@@ -232,14 +257,14 @@ export const options = {
 
     // Or define inline
     custom: {
-      executor: 'ramping-vus',
+      executor: "ramping-vus",
       startVUs: 0,
       stages: [
-        { duration: '1m', target: 50 },
-        { duration: '3m', target: 50 },
-        { duration: '1m', target: 0 },
+        { duration: "1m", target: 50 },
+        { duration: "3m", target: 50 },
+        { duration: "1m", target: 0 },
       ],
-      tags: { test_type: 'custom' },
+      tags: { test_type: "custom" },
     },
   },
 };
@@ -268,7 +293,7 @@ export default function (data) {
 
 export function teardown(data) {
   // Runs once after test
-  console.log('Test complete');
+  console.log("Test complete");
   cleanupTestData();
 }
 ```
@@ -279,15 +304,15 @@ export function teardown(data) {
 export default function () {
   const token = getAuthToken();
 
-  const res = http.get('https://api.example.com/users', {
+  const res = http.get("https://api.example.com/users", {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   });
 
   check(res, {
-    'authenticated successfully': (r) => r.status === 200,
+    "authenticated successfully": (r) => r.status === 200,
   });
 }
 ```
@@ -297,20 +322,20 @@ export default function () {
 ```javascript
 export default function () {
   const payload = JSON.stringify({
-    email: 'test@example.com',
-    name: 'Test User',
+    email: "test@example.com",
+    name: "Test User",
   });
 
-  const res = http.post('https://api.example.com/users', payload, {
+  const res = http.post("https://api.example.com/users", payload, {
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
   });
 
   check(res, {
-    'created successfully': (r) => r.status === 201,
-    'has user id': (r) => JSON.parse(r.body).id !== undefined,
+    "created successfully": (r) => r.status === 201,
+    "has user id": (r) => JSON.parse(r.body).id !== undefined,
   });
 }
 ```
@@ -321,14 +346,14 @@ export default function () {
 export default function () {
   const requests = {
     health: {
-      method: 'GET',
-      url: 'https://api.example.com/health',
+      method: "GET",
+      url: "https://api.example.com/health",
     },
     users: {
-      method: 'GET',
-      url: 'https://api.example.com/users',
+      method: "GET",
+      url: "https://api.example.com/users",
       params: {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       },
     },
   };
@@ -336,11 +361,11 @@ export default function () {
   const responses = http.batch(requests);
 
   check(responses.health, {
-    'health ok': (r) => r.status === 200,
+    "health ok": (r) => r.status === 200,
   });
 
   check(responses.users, {
-    'users ok': (r) => r.status === 200,
+    "users ok": (r) => r.status === 200,
   });
 }
 ```
@@ -348,6 +373,7 @@ export default function () {
 ## Load Profiles
 
 ### Constant Load
+
 ```javascript
 {
   executor: 'constant-vus',
@@ -357,6 +383,7 @@ export default function () {
 ```
 
 ### Ramping VUs
+
 ```javascript
 {
   executor: 'ramping-vus',
@@ -370,6 +397,7 @@ export default function () {
 ```
 
 ### Constant Arrival Rate
+
 ```javascript
 {
   executor: 'constant-arrival-rate',
@@ -382,6 +410,7 @@ export default function () {
 ```
 
 ### Per-VU Iterations
+
 ```javascript
 {
   executor: 'per-vu-iterations',
@@ -396,6 +425,7 @@ export default function () {
 ### Key Metrics
 
 **Request Metrics:**
+
 - `http_req_duration`: Total request time
 - `http_req_waiting`: Time to first byte (TTFB)
 - `http_req_connecting`: Connection establishment time
@@ -404,11 +434,13 @@ export default function () {
 - `http_req_receiving`: Time receiving response
 
 **Response Metrics:**
+
 - `http_reqs`: Total HTTP requests
 - `http_req_failed`: Failed requests
 - `checks`: Check pass rate
 
 **VU Metrics:**
+
 - `vus`: Current virtual users
 - `vus_max`: Max VUs allocated
 - `iterations`: Total iterations completed
@@ -416,6 +448,7 @@ export default function () {
 ### Summary Output
 
 After test completion, k6 shows:
+
 ```
      ✓ status is 200
      ✓ response time < 500ms
@@ -438,12 +471,14 @@ After test completion, k6 shows:
 ### What to Look For
 
 **Good Performance:**
+
 - ✓ All checks passing
 - ✓ p(95) < threshold
 - ✓ Low error rate (<1%)
 - ✓ Consistent response times
 
 **Warning Signs:**
+
 - ✗ Checks failing
 - ✗ Increasing response times
 - ✗ Rising error rates
@@ -453,25 +488,28 @@ After test completion, k6 shows:
 ## Best Practices
 
 ### 1. Start Small
+
 ```javascript
 // Start with low load
 export const options = {
   vus: 5,
-  duration: '1m',
+  duration: "1m",
 };
 ```
 
 ### 2. Gradually Increase Load
+
 ```javascript
 // Ramp up slowly
 stages: [
-  { duration: '5m', target: 50 },   // Gradual ramp
-  { duration: '10m', target: 50 },  // Sustain
-  { duration: '5m', target: 0 },    // Ramp down
-]
+  { duration: "5m", target: 50 }, // Gradual ramp
+  { duration: "10m", target: 50 }, // Sustain
+  { duration: "5m", target: 0 }, // Ramp down
+];
 ```
 
 ### 3. Define Clear Thresholds
+
 ```javascript
 thresholds: {
   http_req_duration: ['p(95)<500', 'p(99)<1000'],
@@ -480,25 +518,29 @@ thresholds: {
 ```
 
 ### 4. Use Realistic Think Time
+
 ```javascript
 // Users don't spam requests
 sleep(Math.random() * 3 + 2); // 2-5 seconds
 ```
 
 ### 5. Tag Your Requests
+
 ```javascript
 http.get(url, {
-  tags: { name: 'health', critical: 'true' },
+  tags: { name: "health", critical: "true" },
 });
 ```
 
 ### 6. Monitor System Resources
+
 - Watch CPU, memory, disk I/O during tests
 - Monitor database connections
 - Track API server metrics
 - Check load balancer stats
 
 ### 7. Test Realistic Scenarios
+
 ```javascript
 // User journey
 export default function () {
@@ -524,8 +566,9 @@ export default function () {
 ### Environment Configuration
 
 Tests automatically load environment config:
+
 ```javascript
-import { getEnvironment } from '../k6.config.js';
+import { getEnvironment } from "../k6.config.js";
 
 const env = getEnvironment();
 // env.baseUrl, env.name, env.apiTimeout
@@ -534,13 +577,15 @@ const env = getEnvironment();
 ### Authentication
 
 Get auth token from environment:
+
 ```javascript
-import { getAuthToken } from '../k6.config.js';
+import { getAuthToken } from "../k6.config.js";
 
 const token = getAuthToken();
 ```
 
 Set token when running:
+
 ```bash
 AUTH_TOKEN=$(get-token) k6 run test.js
 ```
@@ -550,19 +595,21 @@ AUTH_TOKEN=$(get-token) k6 run test.js
 k6 doesn't directly write to our JSONL format, but we can:
 
 1. **Export JSON and process:**
+
 ```bash
 k6 run --out json=results.json test.js
 node scripts/k6-to-jsonl.js results.json
 ```
 
 2. **Use custom summary:**
+
 ```javascript
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 export function handleSummary(data) {
   return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    'results/k6-summary.json': JSON.stringify(data),
+    stdout: textSummary(data, { indent: " ", enableColors: true }),
+    "results/k6-summary.json": JSON.stringify(data),
   };
 }
 ```
@@ -573,6 +620,7 @@ export function handleSummary(data) {
 
 **Cause**: System overwhelmed, configuration issues
 **Solution**:
+
 - Reduce VUs
 - Check API logs
 - Verify authentication
@@ -582,6 +630,7 @@ export function handleSummary(data) {
 
 **Cause**: Database bottleneck, insufficient resources
 **Solution**:
+
 - Profile database queries
 - Scale infrastructure
 - Add caching
@@ -591,6 +640,7 @@ export function handleSummary(data) {
 
 **Cause**: System down, wrong URL
 **Solution**:
+
 - Verify baseURL
 - Check API is running
 - Test with curl/httpie first
@@ -599,6 +649,7 @@ export function handleSummary(data) {
 
 **Cause**: Too many VUs for local machine
 **Solution**:
+
 - Reduce VUs
 - Use k6 cloud
 - Run on dedicated test server
@@ -606,6 +657,7 @@ export function handleSummary(data) {
 ## Examples
 
 See the following test files:
+
 - `performance/tests/load/api-baseline.js` - Baseline load test
 - `performance/tests/stress/api-stress.js` - Stress test to breaking point
 - `performance/tests/spike/api-spike.js` - Sudden traffic spike

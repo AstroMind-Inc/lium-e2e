@@ -6,38 +6,38 @@
 export const options = {
   // VUs (Virtual Users)
   vus: 10,
-  duration: '30s',
+  duration: "30s",
 
   // Thresholds - Define SLAs
   thresholds: {
     // 95% of requests should be below 500ms
-    http_req_duration: ['p(95)<500'],
+    http_req_duration: ["p(95)<500"],
 
     // Error rate should be less than 1%
-    http_req_failed: ['rate<0.01'],
+    http_req_failed: ["rate<0.01"],
 
     // 90% of requests should be below 300ms
-    'http_req_duration{name:health}': ['p(90)<300'],
+    "http_req_duration{name:health}": ["p(90)<300"],
   },
 
   // Stages for ramping VUs
   stages: [
-    { duration: '30s', target: 20 },  // Ramp up to 20 users
-    { duration: '1m', target: 20 },   // Stay at 20 users
-    { duration: '30s', target: 0 },   // Ramp down to 0 users
+    { duration: "30s", target: 20 }, // Ramp up to 20 users
+    { duration: "1m", target: 20 }, // Stay at 20 users
+    { duration: "30s", target: 0 }, // Ramp down to 0 users
   ],
 
   // Tags - For organizing metrics
   tags: {
-    test_type: 'load',
+    test_type: "load",
   },
 
   // Summaries
-  summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
+  summaryTrendStats: ["avg", "min", "med", "max", "p(90)", "p(95)", "p(99)"],
 
   // HTTP settings
   http: {
-    timeout: '30s',
+    timeout: "30s",
   },
 
   // Rate limiting
@@ -47,22 +47,22 @@ export const options = {
   scenarios: {
     // Constant load
     constant_load: {
-      executor: 'constant-vus',
+      executor: "constant-vus",
       vus: 10,
-      duration: '1m',
-      tags: { scenario: 'constant' },
+      duration: "1m",
+      tags: { scenario: "constant" },
     },
 
     // Ramping load
     ramping_load: {
-      executor: 'ramping-vus',
+      executor: "ramping-vus",
       startVUs: 0,
       stages: [
-        { duration: '30s', target: 50 },
-        { duration: '1m', target: 50 },
-        { duration: '30s', target: 0 },
+        { duration: "30s", target: 50 },
+        { duration: "1m", target: 50 },
+        { duration: "30s", target: 0 },
       ],
-      tags: { scenario: 'ramping' },
+      tags: { scenario: "ramping" },
     },
 
     // Per-VU iterations
@@ -91,15 +91,15 @@ export const options = {
  * Load environment configuration
  */
 export function getEnvironment() {
-  const env = __ENV.E2E_ENVIRONMENT || 'local';
+  const env = __ENV.E2E_ENVIRONMENT || "local";
   const configPath = `./config/environments/${env}.json`;
 
   // In k6, we need to read config from environment variables
   // since k6 doesn't support direct file reading in init context
   return {
     name: env,
-    baseUrl: __ENV.API_BASE_URL || 'http://localhost:3000',
-    apiTimeout: parseInt(__ENV.API_TIMEOUT || '30000', 10),
+    baseUrl: __ENV.API_BASE_URL || "http://localhost:3000",
+    apiTimeout: parseInt(__ENV.API_TIMEOUT || "30000", 10),
   };
 }
 
@@ -108,5 +108,5 @@ export function getEnvironment() {
  * Note: In real tests, you'd get this via OAuth flow or from ENV
  */
 export function getAuthToken() {
-  return __ENV.AUTH_TOKEN || '';
+  return __ENV.AUTH_TOKEN || "";
 }
