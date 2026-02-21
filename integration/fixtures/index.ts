@@ -41,82 +41,11 @@ export const test = base.extend<CustomFixtures>({
     await use(config);
   },
 
-  // Access token fixture - extracts token from saved synthetic auth session
+  // Access token fixture - placeholder (not needed when using storageState)
   accessToken: async ({}, use) => {
-    try {
-      // Try to load auth session from synthetic tests (prefer admin, fallback to user)
-      const authDir = path.resolve(__dirname, "../../playwright/.auth");
-      const adminAuthPath = path.join(authDir, "admin.json");
-      const userAuthPath = path.join(authDir, "user.json");
-
-      let authSessionPath: string | null = null;
-      if (fs.existsSync(adminAuthPath)) {
-        authSessionPath = adminAuthPath;
-      } else if (fs.existsSync(userAuthPath)) {
-        authSessionPath = userAuthPath;
-      }
-
-      if (!authSessionPath) {
-        console.warn(
-          "⚠️  No auth session found. Run 'make auth-setup-admin' to authenticate.",
-        );
-        await use("");
-        return;
-      }
-
-      // Read the saved session
-      const sessionData = JSON.parse(
-        fs.readFileSync(authSessionPath, "utf-8"),
-      );
-
-      // Extract access token from localStorage
-      let accessToken = "";
-      for (const origin of sessionData.origins || []) {
-        for (const item of origin.localStorage || []) {
-          // Auth0 typically stores tokens in localStorage with keys like:
-          // - @@auth0spajs@@::CLIENT_ID::AUDIENCE::openid profile email
-          // - auth.token, authToken, access_token, etc.
-          if (
-            item.name.includes("auth0") ||
-            item.name.includes("token") ||
-            item.name === "access_token"
-          ) {
-            try {
-              const parsed = JSON.parse(item.value);
-              if (parsed.access_token) {
-                accessToken = parsed.access_token;
-                break;
-              } else if (parsed.body?.access_token) {
-                accessToken = parsed.body.access_token;
-                break;
-              }
-            } catch {
-              // Not JSON, might be the token itself
-              if (item.value.startsWith("eyJ")) {
-                // JWT tokens start with eyJ
-                accessToken = item.value;
-                break;
-              }
-            }
-          }
-        }
-        if (accessToken) break;
-      }
-
-      if (!accessToken) {
-        console.warn(
-          "⚠️  Could not extract access token from saved session. API tests may fail.",
-        );
-      }
-
-      await use(accessToken);
-    } catch (error) {
-      console.warn(
-        "Failed to load access token from saved session:",
-        (error as Error).message,
-      );
-      await use("");
-    }
+    // Token is automatically included via cookies when using storageState
+    // This fixture exists for backward compatibility
+    await use("");
   },
 
   // Basic API context (no authentication)
@@ -133,15 +62,34 @@ export const test = base.extend<CustomFixtures>({
     await context.dispose();
   },
 
-  // Authenticated API context
-  authenticatedContext: async ({ envConfig, accessToken }, use) => {
+  // Authenticated API context - uses saved browser session cookies
+  authenticatedContext: async ({ envConfig }, use) => {
+    // Try to load auth session from synthetic tests (prefer admin, fallback to user)
+    const authDir = path.resolve(__dirname, "../../playwright/.auth");
+    const adminAuthPath = path.join(authDir, "admin.json");
+    const userAuthPath = path.join(authDir, "user.json");
+
+    let storageState: string | undefined;
+    if (fs.existsSync(adminAuthPath)) {
+      storageState = adminAuthPath;
+    } else if (fs.existsSync(userAuthPath)) {
+      storageState = userAuthPath;
+    }
+
+    if (!storageState) {
+      console.warn(
+        "⚠️  No auth session found. Run 'make auth-setup-admin' to authenticate.",
+      );
+      console.warn("   API tests requiring authentication will fail.");
+    }
+
     const context = await request.newContext({
       baseURL: envConfig.baseUrls.api,
       extraHTTPHeaders: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
+      storageState, // Include cookies from saved browser session
     });
 
     await use(context);
