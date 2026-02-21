@@ -181,11 +181,16 @@ class LiumCLI {
     const pillar = await cliPrompts.promptForPillar();
 
     // For synthetic and integration tests, ask which module to test
-    let module: string | null = null;
+    let module: string | null | 'back' = null;
     if (pillar === 'synthetic') {
       module = await cliPrompts.promptForModule();
     } else if (pillar === 'integration') {
       module = await cliPrompts.promptForIntegrationModule();
+    }
+
+    // Handle "Back" selection
+    if (module === 'back') {
+      return this.runTestsInteractive(); // Restart selection
     }
 
     const environment = await cliPrompts.promptForEnvironment();

@@ -15,6 +15,7 @@ export interface TestModule {
   displayName: string;
   description: string;
   path: string;
+  testCount: number;
 }
 
 export class ModuleScanner {
@@ -47,18 +48,17 @@ export class ModuleScanner {
           continue;
         }
 
-        // Check if directory contains test files
-        const hasTests = await this.hasTestFiles(path.join(testsDir, entry.name));
-        if (!hasTests) {
-          continue;
-        }
+        // Count test files (show even if 0)
+        const modulePath = path.join(testsDir, entry.name);
+        const testCount = await this.countTestFiles(modulePath);
 
-        // Create module info
+        // Create module info (include even if empty)
         modules.push({
           name: entry.name,
           displayName: this.formatDisplayName(entry.name),
-          description: await this.getModuleDescription(path.join(testsDir, entry.name)),
-          path: path.join(testsDir, entry.name),
+          description: await this.getModuleDescription(modulePath),
+          path: modulePath,
+          testCount,
         });
       }
 
@@ -87,14 +87,14 @@ export class ModuleScanner {
   }
 
   /**
-   * Check if directory contains test files
+   * Count test files in directory
    */
-  private async hasTestFiles(dirPath: string): Promise<boolean> {
+  private async countTestFiles(dirPath: string): Promise<number> {
     try {
       const files = await fs.readdir(dirPath);
-      return files.some((file) => file.endsWith('.spec.ts') || file.endsWith('.test.ts'));
+      return files.filter((file) => file.endsWith('.spec.ts') || file.endsWith('.test.ts')).length;
     } catch {
-      return false;
+      return 0;
     }
   }
 

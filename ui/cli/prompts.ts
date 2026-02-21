@@ -4,6 +4,7 @@
  */
 
 import inquirer from 'inquirer';
+import chalk from 'chalk';
 import type { Environment, Pillar } from '../../shared/types/index.js';
 import { envSelector } from '../../shared/environment/env-selector.js';
 import { credentialManager } from '../../shared/credentials/credential-manager.js';
@@ -64,7 +65,7 @@ export class CLIPrompts {
    * Prompt for test module selection (for synthetic tests)
    * Auto-discovers modules from filesystem
    */
-  async promptForModule(): Promise<string | null> {
+  async promptForModule(): Promise<string | null | 'back'> {
     // Scan for available modules
     const modules = await moduleScanner.scanModules('synthetic');
 
@@ -75,16 +76,23 @@ export class CLIPrompts {
         value: 'all',
       },
       {
+        name: '⬅️  Back to pillar selection',
+        value: 'back',
+      },
+      {
         name: '━'.repeat(40),
         disabled: true,
       },
     ];
 
-    // Add discovered modules
+    // Add discovered modules (show count)
     for (const module of modules) {
       const icon = moduleScanner.getModuleIcon(module.name);
+      const countStr = module.testCount === 0
+        ? chalk.gray(`(0 tests)`)
+        : chalk.cyan(`(${module.testCount} test${module.testCount > 1 ? 's' : ''})`);
       choices.push({
-        name: `${icon} ${module.displayName} - ${module.description}`,
+        name: `${icon} ${module.displayName} ${countStr} - ${module.description}`,
         value: module.name,
       });
     }
@@ -98,6 +106,7 @@ export class CLIPrompts {
       },
     ]);
 
+    if (module === 'back') return 'back';
     return module === 'all' ? null : module;
   }
 
@@ -105,7 +114,7 @@ export class CLIPrompts {
    * Prompt for integration test module selection
    * Auto-discovers modules from filesystem
    */
-  async promptForIntegrationModule(): Promise<string | null> {
+  async promptForIntegrationModule(): Promise<string | null | 'back'> {
     // Scan for available modules
     const modules = await moduleScanner.scanModules('integration');
 
@@ -116,16 +125,23 @@ export class CLIPrompts {
         value: 'all',
       },
       {
+        name: '⬅️  Back to pillar selection',
+        value: 'back',
+      },
+      {
         name: '━'.repeat(40),
         disabled: true,
       },
     ];
 
-    // Add discovered modules
+    // Add discovered modules (show count)
     for (const module of modules) {
       const icon = moduleScanner.getModuleIcon(module.name);
+      const countStr = module.testCount === 0
+        ? chalk.gray(`(0 tests)`)
+        : chalk.cyan(`(${module.testCount} test${module.testCount > 1 ? 's' : ''})`);
       choices.push({
-        name: `${icon} ${module.displayName} - ${module.description}`,
+        name: `${icon} ${module.displayName} ${countStr} - ${module.description}`,
         value: module.name,
       });
     }
@@ -139,6 +155,7 @@ export class CLIPrompts {
       },
     ]);
 
+    if (module === 'back') return 'back';
     return module === 'all' ? null : module;
   }
 
