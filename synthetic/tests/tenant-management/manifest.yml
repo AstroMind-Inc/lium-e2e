@@ -1,0 +1,8 @@
+name: Tenant Management
+description: Multi-tenant administration, member lifecycle, and access control
+icon: 🏢
+tags:
+  - critical
+  - multi-tenant
+  - admin
+  - rbac

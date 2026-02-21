@@ -1,0 +1,7 @@
+name: API Stress
+description: Gradually increase load to find API breaking point
+icon: 💪
+tags:
+  - stress
+  - capacity
+  - slow

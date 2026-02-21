@@ -1,0 +1,6 @@
+name: Tools API
+description: Tool and integration API endpoints
+icon: 🔧
+tags:
+  - api
+  - tools

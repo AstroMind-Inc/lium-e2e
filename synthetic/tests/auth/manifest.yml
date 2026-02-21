@@ -1,0 +1,7 @@
+name: Authentication
+description: OAuth2/Auth0 login flows and session management
+icon: 🔐
+tags:
+  - critical
+  - auth
+  - oauth

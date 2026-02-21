@@ -1,0 +1,6 @@
+name: Tenants API
+description: Multi-tenant management API endpoints
+icon: 🏢
+tags:
+  - api
+  - tenants

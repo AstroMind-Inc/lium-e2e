@@ -1,0 +1,7 @@
+name: API Spike
+description: Test resilience to sudden traffic spikes and viral events
+icon: 🚀
+tags:
+  - spike
+  - resilience
+  - fast

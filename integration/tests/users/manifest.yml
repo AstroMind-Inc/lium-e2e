@@ -1,0 +1,6 @@
+name: Users API
+description: User management API endpoints
+icon: 👤
+tags:
+  - api
+  - users

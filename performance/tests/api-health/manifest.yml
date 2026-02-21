@@ -1,0 +1,7 @@
+name: API Health
+description: Health endpoint load testing and availability checks
+icon: 🏥
+tags:
+  - critical
+  - health
+  - fast

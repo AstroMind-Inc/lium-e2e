@@ -1,0 +1,6 @@
+name: Basic Smoke Tests
+description: Health checks and smoke tests
+icon: 🔍
+tags:
+  - smoke
+  - health

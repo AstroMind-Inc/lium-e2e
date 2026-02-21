@@ -1,0 +1,6 @@
+name: Agents API
+description: AI agent management API endpoints
+icon: 🤖
+tags:
+  - api
+  - agents

@@ -1,0 +1,6 @@
+name: Tenants
+description: Multi-tenant isolation and workspace management
+icon: 🏢
+tags:
+  - tenants
+  - workspace

@@ -1,0 +1,8 @@
+name: API Load Testing
+description: Authenticated API endpoint performance and load testing
+icon: ⚡
+tags:
+  - critical
+  - api
+  - load
+  - authenticated
