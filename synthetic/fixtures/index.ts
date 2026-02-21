@@ -82,3 +82,30 @@ export const test = base.extend<CustomFixtures>({
 });
 
 export { expect } from '@playwright/test';
+
+// Global afterEach hook to FORCE screenshot attachment for ALL tests (even passing ones)
+// This ensures screenshots appear in HTML reports for all tests
+test.afterEach(async ({ page }, testInfo) => {
+  console.log(`[Screenshot Hook] Running for test: ${testInfo.title}`);
+
+  if (!page) {
+    console.log('[Screenshot Hook] No page object - skipping');
+    return;
+  }
+
+  try {
+    // Take screenshot
+    const screenshot = await page.screenshot({ fullPage: true });
+    console.log(`[Screenshot Hook] Screenshot captured (${screenshot.length} bytes)`);
+
+    // Attach to test info
+    await testInfo.attach(`screenshot-${testInfo.status}`, {
+      body: screenshot,
+      contentType: 'image/png',
+    });
+
+    console.log('[Screenshot Hook] Screenshot attached to test report');
+  } catch (error) {
+    console.log(`[Screenshot Hook] Error: ${(error as Error).message}`);
+  }
+});

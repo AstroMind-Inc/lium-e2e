@@ -64,6 +64,9 @@ export default defineConfig({
   // Global setup - check and refresh auth tokens before tests
   globalSetup: path.resolve(__dirname, './global-setup.js'),
 
+  // Global teardown - ensure screenshots are retained
+  globalTeardown: path.resolve(__dirname, './global-teardown.js'),
+
   // Note: Example and manual tests use .spec.ts.skip extension (won't run)
   // _examples/, _future/, and multi-user-flow.spec.ts.skip are skipped
 
@@ -97,10 +100,10 @@ export default defineConfig({
     // Collect trace when retrying the failed test
     trace: 'retain-on-failure',
 
-    // Screenshot for all tests (useful for visual verification)
+    // Screenshot for all tests - ALWAYS ON (kept even for passing tests)
     screenshot: 'on',
 
-    // Video on failure
+    // Video on failure only (to save disk space)
     video: 'retain-on-failure',
 
     // Default timeout for actions
