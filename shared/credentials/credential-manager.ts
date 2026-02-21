@@ -3,14 +3,14 @@
  * Handles secure local storage and retrieval of credentials
  */
 
-import { readFile, writeFile, access, chmod } from 'fs/promises';
-import { resolve, join } from 'path';
-import type { Credentials, Environment } from '../types/index.js';
+import { readFile, writeFile, access, chmod } from "fs/promises";
+import { resolve, join } from "path";
+import type { Credentials, Environment } from "../types/index.js";
 
 export class CredentialManager {
   private credentialsDir: string;
 
-  constructor(credentialsDir: string = './credentials') {
+  constructor(credentialsDir: string = "./credentials") {
     this.credentialsDir = resolve(credentialsDir);
   }
 
@@ -20,7 +20,7 @@ export class CredentialManager {
   async saveCredentials(
     env: Environment,
     regular: { username: string; password: string; auth0ClientId?: string },
-    elevated?: { username: string; password: string }
+    elevated?: { username: string; password: string },
   ): Promise<void> {
     const credentials: Credentials = {
       regular,
@@ -38,7 +38,7 @@ export class CredentialManager {
       await chmod(credPath, 0o600);
     } catch (error) {
       throw new Error(
-        `Failed to save credentials for "${env}": ${(error as Error).message}`
+        `Failed to save credentials for "${env}": ${(error as Error).message}`,
       );
     }
   }
@@ -46,7 +46,10 @@ export class CredentialManager {
   /**
    * Load credentials from local file
    */
-  async loadCredentials(env: Environment, elevated: boolean = false): Promise<{
+  async loadCredentials(
+    env: Environment,
+    elevated: boolean = false,
+  ): Promise<{
     username: string;
     password: string;
     auth0ClientId?: string;
@@ -54,14 +57,14 @@ export class CredentialManager {
     const credPath = this.getCredentialPath(env);
 
     try {
-      const content = await readFile(credPath, 'utf-8');
+      const content = await readFile(credPath, "utf-8");
       const credentials: Credentials = JSON.parse(content);
 
       if (elevated) {
         if (!credentials.elevated) {
           throw new Error(
             `Elevated credentials not found for environment "${env}". ` +
-            `Run 'make credentials' to setup elevated credentials.`
+              `Run 'make credentials' to setup elevated credentials.`,
           );
         }
         return credentials.elevated;
@@ -69,14 +72,14 @@ export class CredentialManager {
 
       return credentials.regular;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new Error(
           `Credentials not found for environment "${env}". ` +
-          `Run 'make credentials' to setup credentials.`
+            `Run 'make credentials' to setup credentials.`,
         );
       }
       throw new Error(
-        `Failed to load credentials for "${env}": ${(error as Error).message}`
+        `Failed to load credentials for "${env}": ${(error as Error).message}`,
       );
     }
   }
@@ -98,13 +101,13 @@ export class CredentialManager {
    * Check if elevated credentials exist for environment
    */
   async hasElevatedCredentials(env: Environment): Promise<boolean> {
-    if (!await this.hasCredentials(env)) {
+    if (!(await this.hasCredentials(env))) {
       return false;
     }
 
     try {
       const credPath = this.getCredentialPath(env);
-      const content = await readFile(credPath, 'utf-8');
+      const content = await readFile(credPath, "utf-8");
       const credentials: Credentials = JSON.parse(content);
       return !!credentials.elevated;
     } catch {
@@ -116,15 +119,15 @@ export class CredentialManager {
    * Clear credentials for environment
    */
   async clearCredentials(env: Environment): Promise<void> {
-    const { unlink } = await import('fs/promises');
+    const { unlink } = await import("fs/promises");
     const credPath = this.getCredentialPath(env);
 
     try {
       await unlink(credPath);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw new Error(
-          `Failed to clear credentials for "${env}": ${(error as Error).message}`
+          `Failed to clear credentials for "${env}": ${(error as Error).message}`,
         );
       }
     }
@@ -142,9 +145,13 @@ export class CredentialManager {
    */
   static maskPassword(password: string): string {
     if (password.length <= 2) {
-      return '***';
+      return "***";
     }
-    return password[0] + '*'.repeat(password.length - 2) + password[password.length - 1];
+    return (
+      password[0] +
+      "*".repeat(password.length - 2) +
+      password[password.length - 1]
+    );
   }
 }
 

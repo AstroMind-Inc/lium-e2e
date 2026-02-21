@@ -3,7 +3,7 @@
  * Handles JWT token operations
  */
 
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export interface JWTPayload {
   sub?: string;
@@ -23,8 +23,8 @@ export class JWTHelper {
   decode(token: string): JWTPayload {
     try {
       const decoded = jwt.decode(token);
-      if (!decoded || typeof decoded === 'string') {
-        throw new Error('Invalid token format');
+      if (!decoded || typeof decoded === "string") {
+        throw new Error("Invalid token format");
       }
       return decoded as JWTPayload;
     } catch (error) {
@@ -90,15 +90,18 @@ export class JWTHelper {
       return decoded.roles;
     }
 
-    if (decoded['https://lium.app/roles'] && Array.isArray(decoded['https://lium.app/roles'])) {
-      return decoded['https://lium.app/roles'];
+    if (
+      decoded["https://lium.app/roles"] &&
+      Array.isArray(decoded["https://lium.app/roles"])
+    ) {
+      return decoded["https://lium.app/roles"];
     }
 
     if (decoded.role && Array.isArray(decoded.role)) {
       return decoded.role;
     }
 
-    if (typeof decoded.role === 'string') {
+    if (typeof decoded.role === "string") {
       return [decoded.role];
     }
 
@@ -116,14 +119,17 @@ export class JWTHelper {
       return decoded.permissions;
     }
 
-    if (decoded['https://lium.app/permissions'] && Array.isArray(decoded['https://lium.app/permissions'])) {
-      return decoded['https://lium.app/permissions'];
+    if (
+      decoded["https://lium.app/permissions"] &&
+      Array.isArray(decoded["https://lium.app/permissions"])
+    ) {
+      return decoded["https://lium.app/permissions"];
     }
 
     if (decoded.scope) {
       // Handle space-separated scopes (common in OAuth)
-      if (typeof decoded.scope === 'string') {
-        return decoded.scope.split(' ');
+      if (typeof decoded.scope === "string") {
+        return decoded.scope.split(" ");
       }
       if (Array.isArray(decoded.scope)) {
         return decoded.scope;

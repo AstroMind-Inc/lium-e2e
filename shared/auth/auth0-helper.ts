@@ -3,9 +3,9 @@
  * Auth0-specific authentication for Next.js frontend testing
  */
 
-import { AuthenticationClient } from 'auth0';
-import type { Page } from '@playwright/test';
-import type { TokenSet } from './oauth-helper.js';
+import { AuthenticationClient } from "auth0";
+import type { Page } from "@playwright/test";
+import type { TokenSet } from "./oauth-helper.js";
 
 export interface Auth0Config {
   domain: string;
@@ -33,14 +33,14 @@ export class Auth0Helper {
    */
   async loginWithPassword(
     username: string,
-    password: string
+    password: string,
   ): Promise<TokenSet> {
     try {
       const result = await this.auth0Client.oauth.passwordGrant({
         username,
         password,
-        realm: 'Username-Password-Authentication',
-        scope: 'openid profile email',
+        realm: "Username-Password-Authentication",
+        scope: "openid profile email",
         audience: this.config.audience,
       });
 
@@ -55,7 +55,7 @@ export class Auth0Helper {
       };
     } catch (error: any) {
       throw new Error(
-        `Auth0 password login failed: ${error.message || JSON.stringify(error)}`
+        `Auth0 password login failed: ${error.message || JSON.stringify(error)}`,
       );
     }
   }
@@ -72,50 +72,70 @@ export class Auth0Helper {
     options: {
       waitForUrl?: string | RegExp;
       timeout?: number;
-    } = {}
+    } = {},
   ): Promise<void> {
     const { waitForUrl = /.*\/dashboard.*/, timeout = 15000 } = options;
 
     try {
       // Wait for Auth0 Universal Login page to load
       // Auth0 typically shows email/username first
-      await page.waitForSelector('input[name="username"], input[type="email"]', {
-        timeout,
-      });
+      await page.waitForSelector(
+        'input[name="username"], input[type="email"]',
+        {
+          timeout,
+        },
+      );
 
       // Fill in email/username
-      const usernameInput = page.locator('input[name="username"], input[type="email"]').first();
+      const usernameInput = page
+        .locator('input[name="username"], input[type="email"]')
+        .first();
       await usernameInput.fill(username);
 
       // Auth0 Universal Login may have a continue button before password
-      const continueButton = page.locator('button[type="submit"], button[name="action"]').first();
-      if (await continueButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      const continueButton = page
+        .locator('button[type="submit"], button[name="action"]')
+        .first();
+      if (
+        await continueButton.isVisible({ timeout: 1000 }).catch(() => false)
+      ) {
         await continueButton.click();
 
         // Wait for password field to appear
-        await page.waitForSelector('input[name="password"], input[type="password"]', {
-          timeout: 5000,
-        });
+        await page.waitForSelector(
+          'input[name="password"], input[type="password"]',
+          {
+            timeout: 5000,
+          },
+        );
       }
 
       // Fill in password
-      const passwordInput = page.locator('input[name="password"], input[type="password"]').first();
+      const passwordInput = page
+        .locator('input[name="password"], input[type="password"]')
+        .first();
       await passwordInput.fill(password);
 
       // Submit the form
-      const submitButton = page.locator('button[type="submit"], button[name="action"]').first();
+      const submitButton = page
+        .locator('button[type="submit"], button[name="action"]')
+        .first();
       await submitButton.click();
 
       // Wait for redirect back to application
       await page.waitForURL(waitForUrl, { timeout });
     } catch (error) {
       // Take screenshot for debugging
-      const screenshot = await page.screenshot({ fullPage: true }).catch(() => null);
+      const screenshot = await page
+        .screenshot({ fullPage: true })
+        .catch(() => null);
       if (screenshot) {
-        console.error('Login failed, screenshot saved');
+        console.error("Login failed, screenshot saved");
       }
 
-      throw new Error(`Auth0 browser login failed: ${(error as Error).message}`);
+      throw new Error(
+        `Auth0 browser login failed: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -139,7 +159,7 @@ export class Auth0Helper {
       };
     } catch (error: any) {
       throw new Error(
-        `Auth0 token refresh failed: ${error.message || JSON.stringify(error)}`
+        `Auth0 token refresh failed: ${error.message || JSON.stringify(error)}`,
       );
     }
   }
@@ -163,7 +183,7 @@ export class Auth0Helper {
       return await response.json();
     } catch (error: any) {
       throw new Error(
-        `Failed to get user info: ${error.message || JSON.stringify(error)}`
+        `Failed to get user info: ${error.message || JSON.stringify(error)}`,
       );
     }
   }
@@ -173,12 +193,15 @@ export class Auth0Helper {
    */
   async clientCredentialsGrant(audience?: string): Promise<TokenSet> {
     if (!this.config.clientSecret) {
-      throw new Error('Client secret is required for client credentials grant');
+      throw new Error("Client secret is required for client credentials grant");
     }
 
     try {
       const result = await this.auth0Client.oauth.clientCredentialsGrant({
-        audience: audience || this.config.audience || `https://${this.config.domain}/api/v2/`,
+        audience:
+          audience ||
+          this.config.audience ||
+          `https://${this.config.domain}/api/v2/`,
       });
 
       const data = result.data as any;
@@ -190,7 +213,7 @@ export class Auth0Helper {
       };
     } catch (error: any) {
       throw new Error(
-        `Auth0 client credentials grant failed: ${error.message || JSON.stringify(error)}`
+        `Auth0 client credentials grant failed: ${error.message || JSON.stringify(error)}`,
       );
     }
   }
@@ -205,8 +228,9 @@ export class Auth0Helper {
       const hasSession = await page.evaluate(() => {
         // @ts-ignore - window is available in browser context
         // Check localStorage for Auth0 session (Next.js with @auth0/nextjs-auth0)
-        const auth0Keys = Object.keys(window.localStorage).filter((key: string) =>
-          key.includes('auth0') || key.includes('@@auth0spajs@@')
+        const auth0Keys = Object.keys(window.localStorage).filter(
+          (key: string) =>
+            key.includes("auth0") || key.includes("@@auth0spajs@@"),
         );
 
         if (auth0Keys.length > 0) {
@@ -215,8 +239,10 @@ export class Auth0Helper {
 
         // @ts-ignore - window is available in browser context
         // Check for session cookie
-        const cookies = window.document.cookie.split(';');
-        return cookies.some((cookie: string) => cookie.trim().startsWith('appSession='));
+        const cookies = window.document.cookie.split(";");
+        return cookies.some((cookie: string) =>
+          cookie.trim().startsWith("appSession="),
+        );
       });
 
       return hasSession;
@@ -234,22 +260,25 @@ export class Auth0Helper {
       await page.evaluate(() => {
         // @ts-ignore - window is available in browser context
         // Clear localStorage
-        const auth0Keys = Object.keys(window.localStorage).filter((key: string) =>
-          key.includes('auth0') || key.includes('@@auth0spajs@@')
+        const auth0Keys = Object.keys(window.localStorage).filter(
+          (key: string) =>
+            key.includes("auth0") || key.includes("@@auth0spajs@@"),
         );
         // @ts-ignore - window is available in browser context
         auth0Keys.forEach((key: string) => window.localStorage.removeItem(key));
 
         // @ts-ignore - window is available in browser context
         // Clear cookies
-        window.document.cookie.split(';').forEach((cookie: string) => {
-          const [name] = cookie.split('=');
+        window.document.cookie.split(";").forEach((cookie: string) => {
+          const [name] = cookie.split("=");
           // @ts-ignore - window is available in browser context
           window.document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         });
       });
     } catch (error) {
-      console.warn(`Failed to clear Auth0 session: ${(error as Error).message}`);
+      console.warn(
+        `Failed to clear Auth0 session: ${(error as Error).message}`,
+      );
     }
   }
 }

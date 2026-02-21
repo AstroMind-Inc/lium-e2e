@@ -3,14 +3,14 @@
  * Writes test results to JSONL (JSON Lines) format
  */
 
-import { appendFile, writeFile, readFile, mkdir } from 'fs/promises';
-import { resolve, join } from 'path';
-import type { TestResult, Pillar } from '../types/index.js';
+import { appendFile, writeFile, readFile, mkdir } from "fs/promises";
+import { resolve, join } from "path";
+import type { TestResult, Pillar } from "../types/index.js";
 
 export class ResultWriter {
   private resultsDir: string;
 
-  constructor(resultsDir: string = './results') {
+  constructor(resultsDir: string = "./results") {
     this.resultsDir = resolve(resultsDir);
   }
 
@@ -25,15 +25,13 @@ export class ResultWriter {
       await mkdir(this.resultsDir, { recursive: true });
 
       // Append result as JSON line
-      const line = JSON.stringify(result) + '\n';
+      const line = JSON.stringify(result) + "\n";
       await appendFile(filename, line);
 
       // Update index
       await this.updateIndex(result.pillar, result.environment);
     } catch (error) {
-      throw new Error(
-        `Failed to write result: ${(error as Error).message}`
-      );
+      throw new Error(`Failed to write result: ${(error as Error).message}`);
     }
   }
 
@@ -49,7 +47,7 @@ export class ResultWriter {
     const grouped = this.groupResults(results);
 
     for (const [key, groupResults] of Object.entries(grouped)) {
-      const [pillar, environment] = key.split(':');
+      const [pillar, environment] = key.split(":");
       const filename = this.getFilename(pillar as Pillar, environment);
 
       try {
@@ -57,14 +55,15 @@ export class ResultWriter {
         await mkdir(this.resultsDir, { recursive: true });
 
         // Write all results as JSON lines
-        const lines = groupResults.map(r => JSON.stringify(r)).join('\n') + '\n';
+        const lines =
+          groupResults.map((r) => JSON.stringify(r)).join("\n") + "\n";
         await appendFile(filename, lines);
 
         // Update index
         await this.updateIndex(pillar as Pillar, environment);
       } catch (error) {
         throw new Error(
-          `Failed to write results for ${pillar}/${environment}: ${(error as Error).message}`
+          `Failed to write results for ${pillar}/${environment}: ${(error as Error).message}`,
         );
       }
     }
@@ -73,22 +72,25 @@ export class ResultWriter {
   /**
    * Update results index for quick lookups
    */
-  private async updateIndex(pillar: Pillar, environment: string): Promise<void> {
-    const indexPath = join(this.resultsDir, 'index.json');
+  private async updateIndex(
+    pillar: Pillar,
+    environment: string,
+  ): Promise<void> {
+    const indexPath = join(this.resultsDir, "index.json");
 
     try {
       let index: Record<string, any> = {};
 
       // Load existing index
       try {
-        const content = await readFile(indexPath, 'utf-8');
+        const content = await readFile(indexPath, "utf-8");
         index = JSON.parse(content);
       } catch {
         // Index doesn't exist yet, create new one
       }
 
       const key = `${pillar}:${environment}`;
-      const date = new Date().toISOString().split('T')[0];
+      const date = new Date().toISOString().split("T")[0];
 
       // Update index entry
       index[key] = {
@@ -111,7 +113,7 @@ export class ResultWriter {
    * Get filename for results
    */
   private getFilename(pillar: string, environment: string): string {
-    const date = new Date().toISOString().split('T')[0];
+    const date = new Date().toISOString().split("T")[0];
     return join(this.resultsDir, `${pillar}-${environment}-${date}.jsonl`);
   }
 
@@ -119,14 +121,17 @@ export class ResultWriter {
    * Group results by pillar and environment
    */
   private groupResults(results: TestResult[]): Record<string, TestResult[]> {
-    return results.reduce((acc, result) => {
-      const key = `${result.pillar}:${result.environment}`;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(result);
-      return acc;
-    }, {} as Record<string, TestResult[]>);
+    return results.reduce(
+      (acc, result) => {
+        const key = `${result.pillar}:${result.environment}`;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(result);
+        return acc;
+      },
+      {} as Record<string, TestResult[]>,
+    );
   }
 }
 

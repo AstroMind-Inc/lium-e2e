@@ -9,10 +9,10 @@
  * 3. Updates all environment configs with Auth0 details
  */
 
-import { readFile, writeFile } from 'fs/promises';
-import { resolve, join } from 'path';
-import { existsSync } from 'fs';
-import * as readline from 'readline';
+import { readFile, writeFile } from "fs/promises";
+import { resolve, join } from "path";
+import { existsSync } from "fs";
+import * as readline from "readline";
 
 interface Auth0Config {
   domain: string;
@@ -35,8 +35,8 @@ function question(prompt: string): Promise<string> {
 
 async function readEnvFile(path: string): Promise<Auth0Config | null> {
   try {
-    const content = await readFile(path, 'utf-8');
-    const lines = content.split('\n');
+    const content = await readFile(path, "utf-8");
+    const lines = content.split("\n");
 
     const config: Partial<Auth0Config> = {};
 
@@ -44,19 +44,19 @@ async function readEnvFile(path: string): Promise<Auth0Config | null> {
       const trimmed = line.trim();
 
       // Skip comments and empty lines
-      if (trimmed.startsWith('#') || trimmed === '') continue;
+      if (trimmed.startsWith("#") || trimmed === "") continue;
 
       // Parse KEY=VALUE
       const match = trimmed.match(/^([^=]+)=(.*)$/);
       if (match) {
         const [, key, value] = match;
-        const cleanValue = value.replace(/^["']|["']$/g, ''); // Remove quotes
+        const cleanValue = value.replace(/^["']|["']$/g, ""); // Remove quotes
 
-        if (key === 'AUTH0_DOMAIN') {
+        if (key === "AUTH0_DOMAIN") {
           config.domain = cleanValue;
-        } else if (key === 'AUTH0_CLIENT_ID') {
+        } else if (key === "AUTH0_CLIENT_ID") {
           config.clientId = cleanValue;
-        } else if (key === 'AUTH0_AUDIENCE') {
+        } else if (key === "AUTH0_AUDIENCE") {
           config.audience = cleanValue;
         }
       }
@@ -72,42 +72,52 @@ async function readEnvFile(path: string): Promise<Auth0Config | null> {
   }
 }
 
-async function updateEnvironmentConfig(envName: string, auth0: Auth0Config): Promise<void> {
-  const configPath = resolve(process.cwd(), 'config/environments', `${envName}.json`);
+async function updateEnvironmentConfig(
+  envName: string,
+  auth0: Auth0Config,
+): Promise<void> {
+  const configPath = resolve(
+    process.cwd(),
+    "config/environments",
+    `${envName}.json`,
+  );
 
   try {
-    const content = await readFile(configPath, 'utf-8');
+    const content = await readFile(configPath, "utf-8");
     const config = JSON.parse(content);
 
     // Update Auth0 config
     config.auth0 = auth0;
 
     // Write back
-    await writeFile(configPath, JSON.stringify(config, null, 2) + '\n');
+    await writeFile(configPath, JSON.stringify(config, null, 2) + "\n");
 
     console.log(`✅ Updated ${envName}.json`);
   } catch (error) {
-    console.error(`❌ Failed to update ${envName}.json:`, (error as Error).message);
+    console.error(
+      `❌ Failed to update ${envName}.json:`,
+      (error as Error).message,
+    );
   }
 }
 
 async function main() {
-  console.log('\n🔐 Auth0 Configuration Tool');
-  console.log('════════════════════════════════════════\n');
+  console.log("\n🔐 Auth0 Configuration Tool");
+  console.log("════════════════════════════════════════\n");
 
   // Ask for lium location
-  const defaultPath = '../lium';
+  const defaultPath = "../lium";
   const answer = await question(
-    `Where is your lium repository? (default: ${defaultPath}): `
+    `Where is your lium repository? (default: ${defaultPath}): `,
   );
 
   const liumWebPath = answer.trim() || defaultPath;
-  const envLocalPath = join(liumWebPath, 'apps/web/.env.local');
+  const envLocalPath = join(liumWebPath, "apps/web/.env.local");
 
   // Check if file exists
   if (!existsSync(envLocalPath)) {
     console.error(`\n❌ File not found: ${envLocalPath}`);
-    console.error('Please provide the correct path to lium repository.\n');
+    console.error("Please provide the correct path to lium repository.\n");
     rl.close();
     process.exit(1);
   }
@@ -118,47 +128,47 @@ async function main() {
   const auth0Config = await readEnvFile(envLocalPath);
 
   if (!auth0Config) {
-    console.error('\n❌ Could not find Auth0 configuration in .env.local');
-    console.error('Expected variables:');
-    console.error('  - AUTH0_DOMAIN');
-    console.error('  - AUTH0_CLIENT_ID');
-    console.error('  - AUTH0_AUDIENCE\n');
+    console.error("\n❌ Could not find Auth0 configuration in .env.local");
+    console.error("Expected variables:");
+    console.error("  - AUTH0_DOMAIN");
+    console.error("  - AUTH0_CLIENT_ID");
+    console.error("  - AUTH0_AUDIENCE\n");
     rl.close();
     process.exit(1);
   }
 
-  console.log('\n✅ Found Auth0 configuration:');
+  console.log("\n✅ Found Auth0 configuration:");
   console.log(`   Domain: ${auth0Config.domain}`);
   console.log(`   Client ID: ${auth0Config.clientId}`);
   console.log(`   Audience: ${auth0Config.audience}\n`);
 
   // Confirm
-  const confirm = await question('Update all environment configs? (Y/n): ');
+  const confirm = await question("Update all environment configs? (Y/n): ");
 
-  if (confirm.toLowerCase() === 'n') {
-    console.log('❌ Cancelled\n');
+  if (confirm.toLowerCase() === "n") {
+    console.log("❌ Cancelled\n");
     rl.close();
     process.exit(0);
   }
 
   // Update all environment configs
-  console.log('\n📝 Updating environment configurations...\n');
+  console.log("\n📝 Updating environment configurations...\n");
 
-  await updateEnvironmentConfig('local', auth0Config);
-  await updateEnvironmentConfig('dev', auth0Config);
-  await updateEnvironmentConfig('sandbox', auth0Config);
-  await updateEnvironmentConfig('staging', auth0Config);
+  await updateEnvironmentConfig("local", auth0Config);
+  await updateEnvironmentConfig("dev", auth0Config);
+  await updateEnvironmentConfig("sandbox", auth0Config);
+  await updateEnvironmentConfig("staging", auth0Config);
 
-  console.log('\n✅ All environment configs updated!');
-  console.log('\nNext steps:');
-  console.log('  1. Setup credentials: make credentials');
-  console.log('  2. Run tests: make test\n');
+  console.log("\n✅ All environment configs updated!");
+  console.log("\nNext steps:");
+  console.log("  1. Setup credentials: make credentials");
+  console.log("  2. Run tests: make test\n");
 
   rl.close();
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  console.error("Fatal error:", error);
   rl.close();
   process.exit(1);
 });

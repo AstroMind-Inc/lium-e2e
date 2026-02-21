@@ -3,15 +3,15 @@
  * Loads and validates environment configurations
  */
 
-import { readFile } from 'fs/promises';
-import { resolve, join } from 'path';
-import type { Environment, EnvironmentConfig } from '../types/index.js';
+import { readFile } from "fs/promises";
+import { resolve, join } from "path";
+import type { Environment, EnvironmentConfig } from "../types/index.js";
 
 export class EnvironmentSelector {
   private configDir: string;
   private cache: Map<string, EnvironmentConfig> = new Map();
 
-  constructor(configDir: string = './config/environments') {
+  constructor(configDir: string = "./config/environments") {
     this.configDir = resolve(configDir);
   }
 
@@ -27,7 +27,7 @@ export class EnvironmentSelector {
     const configPath = join(this.configDir, `${env}.json`);
 
     try {
-      const content = await readFile(configPath, 'utf-8');
+      const content = await readFile(configPath, "utf-8");
       const config: EnvironmentConfig = JSON.parse(content);
 
       // Validate config
@@ -37,14 +37,16 @@ export class EnvironmentSelector {
       this.cache.set(env, config);
       return config;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new Error(
           `Environment configuration not found: ${env}\n` +
-          `Expected file: ${configPath}\n` +
-          `Available environments: local, dev, sandbox, staging`
+            `Expected file: ${configPath}\n` +
+            `Available environments: local, dev, sandbox, staging`,
         );
       }
-      throw new Error(`Failed to load environment config for "${env}": ${(error as Error).message}`);
+      throw new Error(
+        `Failed to load environment config for "${env}": ${(error as Error).message}`,
+      );
     }
   }
 
@@ -52,19 +54,24 @@ export class EnvironmentSelector {
    * Get list of available environments
    */
   async getAvailableEnvironments(): Promise<Environment[]> {
-    const { readdir } = await import('fs/promises');
-    const preferredOrder: Environment[] = ['local', 'dev', 'sandbox', 'staging'];
+    const { readdir } = await import("fs/promises");
+    const preferredOrder: Environment[] = [
+      "local",
+      "dev",
+      "sandbox",
+      "staging",
+    ];
 
     try {
       const files = await readdir(this.configDir);
       const available = files
-        .filter(f => f.endsWith('.json'))
-        .map(f => f.replace('.json', '') as Environment)
-        .filter(e => preferredOrder.includes(e));
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => f.replace(".json", "") as Environment)
+        .filter((e) => preferredOrder.includes(e));
 
       // Sort by preferred order
-      return available.sort((a, b) =>
-        preferredOrder.indexOf(a) - preferredOrder.indexOf(b)
+      return available.sort(
+        (a, b) => preferredOrder.indexOf(a) - preferredOrder.indexOf(b),
       );
     } catch {
       return preferredOrder;
@@ -75,7 +82,7 @@ export class EnvironmentSelector {
    * Check if environment exists
    */
   async environmentExists(env: Environment): Promise<boolean> {
-    const { access } = await import('fs/promises');
+    const { access } = await import("fs/promises");
     const configPath = join(this.configDir, `${env}.json`);
     try {
       await access(configPath);
@@ -95,7 +102,7 @@ export class EnvironmentSelector {
 
     if (config.name !== env) {
       throw new Error(
-        `Invalid config for ${env}: "name" field is "${config.name}" but should be "${env}"`
+        `Invalid config for ${env}: "name" field is "${config.name}" but should be "${env}"`,
       );
     }
 
@@ -104,15 +111,21 @@ export class EnvironmentSelector {
     }
 
     if (!config.baseUrls.web || !config.baseUrls.api) {
-      throw new Error(`Invalid config for ${env}: "baseUrls" must contain "web" and "api"`);
+      throw new Error(
+        `Invalid config for ${env}: "baseUrls" must contain "web" and "api"`,
+      );
     }
 
     if (!config.auth0 || !config.auth0.domain || !config.auth0.clientId) {
-      throw new Error(`Invalid config for ${env}: missing or incomplete "auth0" field`);
+      throw new Error(
+        `Invalid config for ${env}: missing or incomplete "auth0" field`,
+      );
     }
 
-    if (!config.timeouts || typeof config.timeouts.api !== 'number') {
-      throw new Error(`Invalid config for ${env}: missing or invalid "timeouts" field`);
+    if (!config.timeouts || typeof config.timeouts.api !== "number") {
+      throw new Error(
+        `Invalid config for ${env}: missing or invalid "timeouts" field`,
+      );
     }
   }
 

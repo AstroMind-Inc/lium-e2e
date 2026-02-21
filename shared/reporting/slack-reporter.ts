@@ -3,10 +3,10 @@
  * Sends test results to Slack via webhook
  */
 
-import { IncomingWebhook, IncomingWebhookSendArguments } from '@slack/webhook';
-import { readFile } from 'fs/promises';
-import { resolve } from 'path';
-import type { TestSummary, Pillar } from '../types/index.js';
+import { IncomingWebhook, IncomingWebhookSendArguments } from "@slack/webhook";
+import { readFile } from "fs/promises";
+import { resolve } from "path";
+import type { TestSummary, Pillar } from "../types/index.js";
 
 export interface SlackConfig {
   webhookUrl: string;
@@ -30,17 +30,20 @@ export class SlackReporter {
    * Load Slack configuration
    */
   async loadConfig(): Promise<void> {
-    const configPath = resolve(process.cwd(), 'config/slack.json');
+    const configPath = resolve(process.cwd(), "config/slack.json");
 
     try {
-      const content = await readFile(configPath, 'utf-8');
+      const content = await readFile(configPath, "utf-8");
       this.config = JSON.parse(content);
 
-      if (this.config?.enabled && this.config.webhookUrl !== 'REPLACE_WITH_SLACK_WEBHOOK_URL') {
+      if (
+        this.config?.enabled &&
+        this.config.webhookUrl !== "REPLACE_WITH_SLACK_WEBHOOK_URL"
+      ) {
         this.webhook = new IncomingWebhook(this.config.webhookUrl);
       }
     } catch (error) {
-      console.warn('Failed to load Slack config:', (error as Error).message);
+      console.warn("Failed to load Slack config:", (error as Error).message);
     }
   }
 
@@ -58,7 +61,7 @@ export class SlackReporter {
     pillar: Pillar,
     environment: string,
     summary: TestSummary,
-    reportUrl?: string
+    reportUrl?: string,
   ): Promise<void> {
     if (!this.isEnabled() || !this.config) {
       return;
@@ -71,12 +74,20 @@ export class SlackReporter {
       return;
     }
 
-    const message = this.formatTestSummary(pillar, environment, summary, reportUrl);
+    const message = this.formatTestSummary(
+      pillar,
+      environment,
+      summary,
+      reportUrl,
+    );
 
     try {
       await this.webhook!.send(message);
     } catch (error) {
-      console.error('Failed to send Slack notification:', (error as Error).message);
+      console.error(
+        "Failed to send Slack notification:",
+        (error as Error).message,
+      );
     }
   }
 
@@ -88,25 +99,37 @@ export class SlackReporter {
     environment: string,
     testName: string,
     errorMessage: string,
-    reportUrl?: string
+    reportUrl?: string,
   ): Promise<void> {
     if (!this.isEnabled() || !this.config?.notifyOn.testFailure) {
       return;
     }
 
-    const message = this.formatTestFailure(pillar, environment, testName, errorMessage, reportUrl);
+    const message = this.formatTestFailure(
+      pillar,
+      environment,
+      testName,
+      errorMessage,
+      reportUrl,
+    );
 
     try {
       await this.webhook!.send(message);
     } catch (error) {
-      console.error('Failed to send Slack notification:', (error as Error).message);
+      console.error(
+        "Failed to send Slack notification:",
+        (error as Error).message,
+      );
     }
   }
 
   /**
    * Determine if we should send notification based on config
    */
-  private shouldNotify(summary: TestSummary, failurePercentage: number): boolean {
+  private shouldNotify(
+    summary: TestSummary,
+    failurePercentage: number,
+  ): boolean {
     if (!this.config) {
       return false;
     }
@@ -139,15 +162,15 @@ export class SlackReporter {
     pillar: Pillar,
     environment: string,
     summary: TestSummary,
-    reportUrl?: string
+    reportUrl?: string,
   ): IncomingWebhookSendArguments {
     const passPercentage = ((summary.passed / summary.total) * 100).toFixed(1);
-    const emoji = summary.failed === 0 ? ':white_check_mark:' : ':warning:';
-    const color = summary.failed === 0 ? '#36a64f' : '#ff9800';
+    const emoji = summary.failed === 0 ? ":white_check_mark:" : ":warning:";
+    const color = summary.failed === 0 ? "#36a64f" : "#ff9800";
 
     return {
-      username: 'Lium E2E Bot',
-      icon_emoji: ':robot_face:',
+      username: "Lium E2E Bot",
+      icon_emoji: ":robot_face:",
       channel: this.config?.channel,
       attachments: [
         {
@@ -155,47 +178,50 @@ export class SlackReporter {
           title: `${emoji} ${this.formatPillar(pillar)} Tests - ${environment}`,
           fields: [
             {
-              title: 'Status',
-              value: summary.failed === 0 ? 'All Passed' : `${summary.failed} Failed`,
+              title: "Status",
+              value:
+                summary.failed === 0
+                  ? "All Passed"
+                  : `${summary.failed} Failed`,
               short: true,
             },
             {
-              title: 'Pass Rate',
+              title: "Pass Rate",
               value: `${passPercentage}%`,
               short: true,
             },
             {
-              title: 'Total Tests',
+              title: "Total Tests",
               value: summary.total.toString(),
               short: true,
             },
             {
-              title: 'Duration',
+              title: "Duration",
               value: this.formatDuration(summary.duration),
               short: true,
             },
             {
-              title: 'Passed',
+              title: "Passed",
               value: summary.passed.toString(),
               short: true,
             },
             {
-              title: 'Failed',
+              title: "Failed",
               value: summary.failed.toString(),
               short: true,
             },
             {
-              title: 'Skipped',
+              title: "Skipped",
               value: summary.skipped.toString(),
               short: true,
             },
             {
-              title: 'Environment',
+              title: "Environment",
               value: environment,
               short: true,
             },
           ],
-          footer: 'Lium E2E Testing Framework',
+          footer: "Lium E2E Testing Framework",
           ts: Math.floor(Date.now() / 1000).toString(),
         },
       ],
@@ -213,34 +239,34 @@ export class SlackReporter {
     environment: string,
     testName: string,
     errorMessage: string,
-    reportUrl?: string
+    reportUrl?: string,
   ): IncomingWebhookSendArguments {
     return {
-      username: 'Lium E2E Bot',
-      icon_emoji: ':robot_face:',
+      username: "Lium E2E Bot",
+      icon_emoji: ":robot_face:",
       channel: this.config?.channel,
       attachments: [
         {
-          color: '#d32f2f',
+          color: "#d32f2f",
           title: `:x: Test Failure - ${this.formatPillar(pillar)}`,
           fields: [
             {
-              title: 'Environment',
+              title: "Environment",
               value: environment,
               short: true,
             },
             {
-              title: 'Test',
+              title: "Test",
               value: testName,
               short: true,
             },
             {
-              title: 'Error',
+              title: "Error",
               value: this.truncateError(errorMessage),
               short: false,
             },
           ],
-          footer: 'Lium E2E Testing Framework',
+          footer: "Lium E2E Testing Framework",
           ts: Math.floor(Date.now() / 1000).toString(),
         },
       ],
@@ -255,9 +281,9 @@ export class SlackReporter {
    */
   private formatPillar(pillar: Pillar): string {
     const pillarNames: Record<Pillar, string> = {
-      synthetic: 'Synthetic (Browser)',
-      integration: 'Integration (API)',
-      performance: 'Performance (Load)',
+      synthetic: "Synthetic (Browser)",
+      integration: "Integration (API)",
+      performance: "Performance (Load)",
     };
 
     return pillarNames[pillar] || pillar;
@@ -296,7 +322,7 @@ export class SlackReporter {
       return error;
     }
 
-    return error.substring(0, maxLength) + '...';
+    return error.substring(0, maxLength) + "...";
   }
 }
 
