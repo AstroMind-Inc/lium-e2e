@@ -302,9 +302,9 @@ export class TestRunner {
 
     // For integration tests, check API
     if (pillar === "integration") {
-      const apiHealthy = await this.pingServer(apiUrl, "API");
+      const apiHealthy = await this.pingServer(`${apiUrl}/docs`, "API");
       if (!apiHealthy) {
-        console.log(chalk.red(`\n❌ API is not accessible at: ${apiUrl}\n`));
+        console.log(chalk.red(`\n❌ API is not accessible at: ${apiUrl}/docs\n`));
         const { shouldContinue } = await inquirer.prompt<{
           shouldContinue: boolean;
         }>([
@@ -349,9 +349,14 @@ export class TestRunner {
 
       clearTimeout(timeout);
 
-      // Any response (even 401, 403, redirect) means server is up
-      // We just want to know if it's responding
-      if (response.status >= 200 && response.status < 600) {
+      // Accept 2xx (success) or 3xx (redirect - means server is up)
+      // For web app, also accept 401/403 (means auth is working)
+      const isHealthy =
+        (response.status >= 200 && response.status < 400) ||
+        response.status === 401 ||
+        response.status === 403;
+
+      if (isHealthy) {
         console.log(
           chalk.green(
             `  ✓ ${serverName} is responding (status: ${response.status})`,
@@ -360,6 +365,12 @@ export class TestRunner {
         return true;
       }
 
+      // 4xx/5xx errors (except 401/403) indicate problems
+      console.log(
+        chalk.red(
+          `  ✗ ${serverName} returned error status: ${response.status}`,
+        ),
+      );
       return false;
     } catch (error: any) {
       // Check specific error types
