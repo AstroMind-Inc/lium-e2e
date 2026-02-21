@@ -3,10 +3,10 @@
  * Display test results in CLI
  */
 
-import Table from 'cli-table3';
-import chalk from 'chalk';
-import { resultReader } from '../../shared/results/result-reader.js';
-import type { Pillar, Environment } from '../../shared/types/index.js';
+import Table from "cli-table3";
+import chalk from "chalk";
+import { resultReader } from "../../shared/results/result-reader.js";
+import type { Pillar, Environment } from "../../shared/types/index.js";
 
 export class ResultsViewer {
   /**
@@ -14,26 +14,26 @@ export class ResultsViewer {
    */
   async displaySummary(days: number = 7): Promise<void> {
     console.log(chalk.bold(`\n📊 Test Results Summary (Last ${days} days)`));
-    console.log(chalk.gray('━'.repeat(80)));
+    console.log(chalk.gray("━".repeat(80)));
 
-    const pillars: Pillar[] = ['synthetic', 'integration', 'performance'];
-    const environments: Environment[] = ['local', 'dev', 'sandbox', 'staging'];
+    const pillars: Pillar[] = ["synthetic", "integration", "performance"];
+    const environments: Environment[] = ["local", "dev", "sandbox", "staging"];
 
     for (const pillar of pillars) {
       console.log(chalk.bold(`\n${this.formatPillarName(pillar)}:`));
 
       const table = new Table({
         head: [
-          chalk.cyan('Environment'),
-          chalk.cyan('Total'),
-          chalk.green('Passed'),
-          chalk.red('Failed'),
-          chalk.yellow('Skipped'),
-          chalk.blue('Pass Rate'),
+          chalk.cyan("Environment"),
+          chalk.cyan("Total"),
+          chalk.green("Passed"),
+          chalk.red("Failed"),
+          chalk.yellow("Skipped"),
+          chalk.blue("Pass Rate"),
         ],
         style: {
           head: [],
-          border: ['gray'],
+          border: ["gray"],
         },
       });
 
@@ -48,14 +48,18 @@ export class ResultsViewer {
           this.formatEnvironmentName(env),
           summary.total.toString(),
           chalk.green(summary.passed.toString()),
-          summary.failed > 0 ? chalk.red(summary.failed.toString()) : chalk.gray('0'),
-          summary.skipped > 0 ? chalk.yellow(summary.skipped.toString()) : chalk.gray('0'),
+          summary.failed > 0
+            ? chalk.red(summary.failed.toString())
+            : chalk.gray("0"),
+          summary.skipped > 0
+            ? chalk.yellow(summary.skipped.toString())
+            : chalk.gray("0"),
           this.formatPassRate(summary.passRate),
         ]);
       }
 
       if (table.length === 0) {
-        console.log(chalk.gray('  No results found'));
+        console.log(chalk.gray("  No results found"));
       } else {
         console.log(table.toString());
       }
@@ -70,14 +74,14 @@ export class ResultsViewer {
   async displayDetailed(
     pillar: Pillar,
     environment: Environment,
-    days: number = 7
+    days: number = 7,
   ): Promise<void> {
     console.log(
       chalk.bold(
-        `\n📋 Detailed Results: ${this.formatPillarName(pillar)} / ${this.formatEnvironmentName(environment)}`
-      )
+        `\n📋 Detailed Results: ${this.formatPillarName(pillar)} / ${this.formatEnvironmentName(environment)}`,
+      ),
     );
-    console.log(chalk.gray('━'.repeat(80)));
+    console.log(chalk.gray("━".repeat(80)));
 
     const dateFrom = new Date();
     dateFrom.setDate(dateFrom.getDate() - days);
@@ -85,22 +89,22 @@ export class ResultsViewer {
     const results = await resultReader.query({ pillar, environment, dateFrom });
 
     if (results.length === 0) {
-      console.log(chalk.yellow('No results found'));
+      console.log(chalk.yellow("No results found"));
       return;
     }
 
     const table = new Table({
       head: [
-        chalk.cyan('Test'),
-        chalk.cyan('Status'),
-        chalk.cyan('Duration'),
-        chalk.cyan('User'),
-        chalk.cyan('Time'),
+        chalk.cyan("Test"),
+        chalk.cyan("Status"),
+        chalk.cyan("Duration"),
+        chalk.cyan("User"),
+        chalk.cyan("Time"),
       ],
       colWidths: [40, 10, 12, 20, 20],
       style: {
         head: [],
-        border: ['gray'],
+        border: ["gray"],
       },
       wordWrap: true,
     });
@@ -126,11 +130,11 @@ export class ResultsViewer {
 
     // Show summary
     const summary = await resultReader.getSummary(pillar, environment, days);
-    console.log(chalk.bold('\nSummary:'));
+    console.log(chalk.bold("\nSummary:"));
     console.log(`  Total:     ${summary.total}`);
-    console.log(`  ${chalk.green('Passed:')}   ${summary.passed}`);
-    console.log(`  ${chalk.red('Failed:')}   ${summary.failed}`);
-    console.log(`  ${chalk.yellow('Skipped:')}  ${summary.skipped}`);
+    console.log(`  ${chalk.green("Passed:")}   ${summary.passed}`);
+    console.log(`  ${chalk.red("Failed:")}   ${summary.failed}`);
+    console.log(`  ${chalk.yellow("Skipped:")}  ${summary.skipped}`);
     console.log(`  Pass Rate: ${this.formatPassRate(summary.passRate)}`);
     console.log();
   }
@@ -139,22 +143,29 @@ export class ResultsViewer {
    * Display flaky tests
    */
   async displayFlakyTests(pillar: Pillar, days: number = 30): Promise<void> {
-    console.log(chalk.bold(`\n⚠️  Flaky Tests: ${this.formatPillarName(pillar)}`));
-    console.log(chalk.gray('━'.repeat(80)));
+    console.log(
+      chalk.bold(`\n⚠️  Flaky Tests: ${this.formatPillarName(pillar)}`),
+    );
+    console.log(chalk.gray("━".repeat(80)));
 
     const flakyTests = await resultReader.getFlakyTests(pillar, days);
 
     if (flakyTests.length === 0) {
-      console.log(chalk.green('✓ No flaky tests found!'));
+      console.log(chalk.green("✓ No flaky tests found!"));
       return;
     }
 
     const table = new Table({
-      head: [chalk.cyan('Test'), chalk.cyan('Runs'), chalk.cyan('Failures'), chalk.cyan('Flaky Rate')],
+      head: [
+        chalk.cyan("Test"),
+        chalk.cyan("Runs"),
+        chalk.cyan("Failures"),
+        chalk.cyan("Flaky Rate"),
+      ],
       colWidths: [50, 10, 12, 15],
       style: {
         head: [],
-        border: ['gray'],
+        border: ["gray"],
       },
       wordWrap: true,
     });
@@ -177,9 +188,9 @@ export class ResultsViewer {
    */
   private formatPillarName(pillar: Pillar): string {
     const names: Record<Pillar, string> = {
-      synthetic: '🌐 Synthetic',
-      integration: '🔗 Integration',
-      performance: '⚡ Performance',
+      synthetic: "🌐 Synthetic",
+      integration: "🔗 Integration",
+      performance: "⚡ Performance",
     };
     return names[pillar];
   }
@@ -189,10 +200,10 @@ export class ResultsViewer {
    */
   private formatEnvironmentName(env: Environment): string {
     const names: Record<Environment, string> = {
-      local: '🏠 Local',
-      dev: '🔧 Dev',
-      sandbox: '🏖️  Sandbox',
-      staging: '🎭 Staging',
+      local: "🏠 Local",
+      dev: "🔧 Dev",
+      sandbox: "🏖️  Sandbox",
+      staging: "🎭 Staging",
     };
     return names[env];
   }
@@ -200,14 +211,14 @@ export class ResultsViewer {
   /**
    * Format test status with color
    */
-  private formatStatus(status: 'passed' | 'failed' | 'skipped'): string {
+  private formatStatus(status: "passed" | "failed" | "skipped"): string {
     switch (status) {
-      case 'passed':
-        return chalk.green('✓ Passed');
-      case 'failed':
-        return chalk.red('✗ Failed');
-      case 'skipped':
-        return chalk.yellow('○ Skipped');
+      case "passed":
+        return chalk.green("✓ Passed");
+      case "failed":
+        return chalk.red("✗ Failed");
+      case "skipped":
+        return chalk.yellow("○ Skipped");
       default:
         return status;
     }
@@ -235,7 +246,7 @@ export class ResultsViewer {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) {
-      return 'just now';
+      return "just now";
     } else if (diffMins < 60) {
       return `${diffMins}m ago`;
     } else if (diffHours < 24) {
@@ -284,7 +295,7 @@ export class ResultsViewer {
     if (str.length <= maxLength) {
       return str;
     }
-    return str.substring(0, maxLength - 3) + '...';
+    return str.substring(0, maxLength - 3) + "...";
   }
 }
 
