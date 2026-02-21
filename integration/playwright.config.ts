@@ -33,9 +33,17 @@ export default defineConfig({
 
   // Reporter configuration (use same report folder as synthetic for consolidated view)
   reporter: [
-    ["html", { outputFolder: "../playwright-report", open: "never" }],
+    [
+      "html",
+      {
+        outputFolder:
+          process.env.PLAYWRIGHT_HTML_REPORT || "../playwright-report",
+        open: "never",
+      },
+    ],
     ["list"],
     ["junit", { outputFile: "../reports/junit-api-results.xml" }],
+    ["../scripts/jsonl-playwright-reporter.js"],
   ],
 
   // Shared settings for all the projects below

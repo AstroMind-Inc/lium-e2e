@@ -44,10 +44,14 @@ help:
 	@echo ""
 	@echo "Results:"
 	@echo "  make report         - Open interactive HTML report (recommended!)"
-	@echo "  make results        - CLI summary (requires JSONL - not yet implemented)"
+	@echo "  make results        - JSONL summary (synthetic tests)"
+	@echo "  make results-flaky  - Find flaky tests"
+	@echo "  make results-api    - JSONL summary (integration tests)"
+	@echo "  make results-perf   - JSONL summary (performance tests)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean          - Remove node_modules and generated files"
+	@echo "  make clean-reports  - Remove all HTML reports (JSONL preserved)"
 	@echo "  make down           - Stop any running tests/processes"
 
 # Initial setup
@@ -138,12 +142,20 @@ up: test
 
 # Run all tests for each pillar (non-interactive, headless, fast)
 test-syn-all: .check-auth
-	@echo "🧪 Running ALL synthetic tests (headless)..."
-	@npx playwright test synthetic/
+	@TIMESTAMP=$$(date +"%Y-%m-%dT%H-%M-%S"); \
+	REPORT_DIR="playwright-reports/synthetic-$$TIMESTAMP"; \
+	echo "🧪 Running ALL synthetic tests (headless)..."; \
+	PLAYWRIGHT_HTML_REPORT="$$REPORT_DIR" npx playwright test synthetic/; \
+	ln -sfn "synthetic-$$TIMESTAMP" playwright-reports/latest; \
+	echo "📊 Report saved: $$REPORT_DIR/index.html"
 
 test-api-all: .check-auth
-	@echo "🧪 Running ALL integration tests (headless)..."
-	@npx playwright test integration/
+	@TIMESTAMP=$$(date +"%Y-%m-%dT%H-%M-%S"); \
+	REPORT_DIR="playwright-reports/integration-$$TIMESTAMP"; \
+	echo "🧪 Running ALL integration tests (headless)..."; \
+	PLAYWRIGHT_HTML_REPORT="$$REPORT_DIR" npx playwright test integration/; \
+	ln -sfn "integration-$$TIMESTAMP" playwright-reports/latest; \
+	echo "📊 Report saved: $$REPORT_DIR/index.html"
 
 test-perf-all: .check-auth
 	@echo "🧪 Running ALL performance tests..."
@@ -305,16 +317,45 @@ configure:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@npm run configure
 
-# View results
+# View JSONL results
 results:
-	@echo "📊 Recent Test Results"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@npm run cli -- view-results
+	@node scripts/view-results.js summary synthetic local
+
+results-flaky:
+	@node scripts/view-results.js flaky synthetic local
+
+results-api:
+	@node scripts/view-results.js summary integration local
+
+results-perf:
+	@node scripts/view-results.js summary performance local
 
 # View interactive HTML report with screenshots/videos
 report:
-	@echo "📊 Opening interactive test report..."
-	@npx playwright show-report playwright-report
+	@if [ -L "playwright-reports/latest" ]; then \
+		echo "📊 Opening latest test report..."; \
+		npx playwright show-report playwright-reports/latest; \
+	elif [ -d "playwright-report" ]; then \
+		echo "📊 Opening test report..."; \
+		npx playwright show-report playwright-report; \
+	else \
+		echo "❌ No reports found. Run tests first."; \
+		exit 1; \
+	fi
+
+report-all:
+	@echo "📊 Test run history:"; \
+	echo ""; \
+	if [ -d "playwright-reports" ]; then \
+		for dir in $$(ls -t playwright-reports/ | grep -v '^latest$$'); do \
+			echo "  $$dir"; \
+		done | head -20; \
+	else \
+		echo "  No test runs saved yet"; \
+	fi; \
+	echo ""; \
+	echo "Use 'make report' to view latest report"; \
+	echo "Use 'npx playwright show-report playwright-reports/<name>' for specific run"
 
 # Cleanup
 clean:
@@ -325,6 +366,11 @@ clean:
 	@rm -rf reports/*
 	@rm -rf .playwright
 	@echo "✅ Clean complete"
+
+clean-reports:
+	@echo "🧹 Cleaning old test reports..."; \
+	rm -rf playwright-report playwright-reports; \
+	echo "✅ All reports cleaned (JSONL results preserved)"
 
 # Stop running tests
 down:

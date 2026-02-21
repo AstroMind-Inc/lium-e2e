@@ -100,9 +100,17 @@ export default defineConfig({
 
   // Reporter configuration
   reporter: [
-    ["html", { outputFolder: "../playwright-report", open: "never" }],
+    [
+      "html",
+      {
+        outputFolder:
+          process.env.PLAYWRIGHT_HTML_REPORT || "../playwright-report",
+        open: "never",
+      },
+    ],
     ["list"],
     ["junit", { outputFile: "../reports/junit-results.xml" }],
+    ["../scripts/jsonl-playwright-reporter.js"],
   ],
 
   // Shared settings for all the projects below
