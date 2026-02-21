@@ -1,0 +1,17 @@
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="0.45499800000000007">
+<testsuite name="health/api-health.spec.ts" timestamp="2026-02-21T03:55:32.108Z" hostname="api" tests="2" failures="0" skipped="0" time="0.072" errors="0">
+<testcase name="Backend API Health › API responds to health check" classname="health/api-health.spec.ts" time="0.036">
+<system-out>
+<![CDATA[Checking API health at: http://lium-api:8000
+Response status: 404
+]]>
+</system-out>
+</testcase>
+<testcase name="Backend API Health › API is reachable" classname="health/api-health.spec.ts" time="0.036">
+<system-out>
+<![CDATA[API base URL responded with: 404
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

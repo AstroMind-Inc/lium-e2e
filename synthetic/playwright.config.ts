@@ -78,10 +78,10 @@ export default defineConfig({
   testDir: "./tests",
 
   // Global setup - check and refresh auth tokens before tests
-  globalSetup: path.resolve(__dirname, "./global-setup.js"),
+  globalSetup: path.resolve(__dirname, "./global-setup.ts"),
 
   // Global teardown - ensure screenshots are retained
-  globalTeardown: path.resolve(__dirname, "./global-teardown.js"),
+  globalTeardown: path.resolve(__dirname, "./global-teardown.ts"),
 
   // Note: Example and manual tests use .spec.ts.skip extension (won't run)
   // _examples/, _future/, and multi-user-flow.spec.ts.skip are skipped
@@ -100,17 +100,8 @@ export default defineConfig({
 
   // Reporter configuration
   reporter: [
-    [
-      "html",
-      {
-        outputFolder:
-          process.env.PLAYWRIGHT_HTML_REPORT || "../playwright-report",
-        open: "never",
-      },
-    ],
+    ["html", { outputFolder: "../playwright-report" }],
     ["list"],
-    ["junit", { outputFile: "../reports/junit-results.xml" }],
-    ["../scripts/jsonl-playwright-reporter.js"],
   ],
 
   // Shared settings for all the projects below

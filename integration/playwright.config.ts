@@ -43,7 +43,8 @@ export default defineConfig({
     ],
     ["list"],
     ["junit", { outputFile: "../reports/junit-api-results.xml" }],
-    ["../scripts/jsonl-playwright-reporter.js"],
+    // Note: JSONL reporter not working via config - use manual recording
+    // ["../scripts/jsonl-playwright-reporter.js"],
   ],
 
   // Shared settings for all the projects below

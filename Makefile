@@ -143,11 +143,11 @@ up: test
 # Run all tests for each pillar (non-interactive, headless, fast)
 test-syn-all: .check-auth
 	@echo "🧪 Running ALL synthetic tests (headless)..."
-	@npx playwright test synthetic/
+	@npx playwright test --config=synthetic/playwright.config.ts
 
 test-api-all: .check-auth
 	@echo "🧪 Running ALL integration tests (headless)..."
-	@npx playwright test integration/
+	@npx playwright test --config=integration/playwright.config.ts
 
 test-perf-all: .check-auth
 	@echo "🧪 Running ALL performance tests..."
@@ -168,7 +168,7 @@ test-syn-%: .check-auth
 	@MODULE_NAME=$(subst test-syn-,,$@); \
 	if [ -d "synthetic/tests/$$MODULE_NAME" ]; then \
 		echo "🧪 Running synthetic/$$MODULE_NAME tests..."; \
-		npx playwright test synthetic/tests/$$MODULE_NAME/; \
+		npx playwright test --config=synthetic/playwright.config.ts synthetic/tests/$$MODULE_NAME/; \
 	else \
 		echo "❌ Module 'synthetic/tests/$$MODULE_NAME' not found"; \
 		echo ""; \
@@ -182,7 +182,7 @@ test-api-%: .check-auth
 	@MODULE_NAME=$(subst test-api-,,$@); \
 	if [ -d "integration/tests/$$MODULE_NAME" ]; then \
 		echo "🧪 Running integration/$$MODULE_NAME API tests..."; \
-		npx playwright test integration/tests/$$MODULE_NAME/; \
+		npx playwright test --config=integration/playwright.config.ts integration/tests/$$MODULE_NAME/; \
 	else \
 		echo "❌ Module 'integration/tests/$$MODULE_NAME' not found"; \
 		echo ""; \
