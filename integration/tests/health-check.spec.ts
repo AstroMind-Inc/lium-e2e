@@ -12,7 +12,7 @@ test.describe("Health Check API", () => {
   });
 
   test("GET /health should return 200", async ({ apiContext }) => {
-    const response = await apiContext.get("/health");
+    const response = await apiContext.get("/healthz");
 
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -22,7 +22,7 @@ test.describe("Health Check API", () => {
     apiContext,
     validator,
   }) => {
-    const response = await apiContext.get("/health");
+    const response = await apiContext.get("/healthz");
 
     expect(response.ok()).toBeTruthy();
 
@@ -51,7 +51,7 @@ test.describe("Health Check API", () => {
   }) => {
     const startTime = Date.now();
 
-    const response = await apiContext.get("/health");
+    const response = await apiContext.get("/healthz");
 
     const duration = Date.now() - startTime;
 
@@ -60,7 +60,7 @@ test.describe("Health Check API", () => {
   });
 
   test("GET /health should have correct headers", async ({ apiContext }) => {
-    const response = await apiContext.get("/health");
+    const response = await apiContext.get("/healthz");
 
     expect(response.ok()).toBeTruthy();
 
