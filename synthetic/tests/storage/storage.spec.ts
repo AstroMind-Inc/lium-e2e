@@ -71,13 +71,28 @@ if (testFiles.length === 0) {
         .count();
       if (selectTenantText > 0) {
         console.log(`   Selecting tenant...`);
-        await adminPage.click('button:has-text("Filter by tenant")');
-        await adminPage.waitForTimeout(1000);
 
-        const tenantOptions = adminPage.locator('[role="menuitem"]').first();
-        if ((await tenantOptions.count()) > 0) {
-          await tenantOptions.click();
-          await adminPage.waitForTimeout(2000);
+        // Click the "Filter by tenant" dropdown in the sidebar
+        const filterButton = adminPage.locator('button:has-text("Filter by tenant")').first();
+        await filterButton.click();
+        await adminPage.waitForTimeout(1500);
+
+        // Select the first tenant from the list
+        const tenantItems = await adminPage.locator('[role="menuitem"], [role="option"], a[href*="tenant"]').all();
+        console.log(`   Found ${tenantItems.length} tenant options`);
+
+        if (tenantItems.length > 0) {
+          await tenantItems[0].click();
+          await adminPage.waitForTimeout(3000);
+          console.log(`   ✅ Tenant selected`);
+        } else {
+          // Try alternative: click on tenant in sidebar list
+          const sidebarTenant = adminPage.locator('.sidebar a:has-text("tenant"), button:has-text("tenant")').first();
+          if ((await sidebarTenant.count()) > 0) {
+            await sidebarTenant.click();
+            await adminPage.waitForTimeout(3000);
+            console.log(`   ✅ Tenant selected from sidebar`);
+          }
         }
       }
 
