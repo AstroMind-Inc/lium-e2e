@@ -11,14 +11,17 @@ import * as path from "path";
 import * as fs from "fs";
 import { fileURLToPath } from "url";
 import { refreshAuthIfNeeded } from "../shared/auth/token-refresh.js";
+import { envSelector } from "../shared/environment/env-selector.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function globalSetup(config: FullConfig) {
-  // Get base URL from config or environment
-  const baseUrl =
-    config.use?.baseURL || process.env.BASE_URL || "http://localhost:3000";
+  // Get base URL from environment config (same as tests use)
+  // This ensures token checks use the same URL as actual tests
+  const environment = (process.env.E2E_ENVIRONMENT as any) || "local";
+  const envConfig = await envSelector.loadEnvironment(environment);
+  const baseUrl = envConfig.baseUrls.web;
 
   // Health check - verify host is reachable before running tests
   console.log(`\n🏥 Checking if host is reachable: ${baseUrl}\n`);

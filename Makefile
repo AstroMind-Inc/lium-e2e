@@ -3,6 +3,11 @@
 # Default target - show help
 .DEFAULT_GOAL := help
 
+# Environment selection - defaults to local
+# Usage: make test-syn-all env=dev
+env ?= local
+export E2E_ENVIRONMENT=$(env)
+
 # Help target
 help:
 	@echo "Lium E2E Testing Framework"
@@ -20,6 +25,10 @@ help:
 	@echo "  make auth-status      - Check which auth sessions are saved"
 	@echo "  make auth-clear       - Clear all saved auth sessions"
 	@echo ""
+	@echo "JWT Credentials (for fast, headless tests):"
+	@echo "  make creds-setup      - Save credentials for JWT token authentication"
+	@echo "  make creds-status     - Check which credentials are saved"
+	@echo ""
 	@echo "Quality Checks:"
 	@echo "  make preflight      - Run all quality checks (format, lint, test, coverage)"
 	@echo ""
@@ -31,6 +40,17 @@ help:
 	@echo "  make test-syn-all   - Run ALL synthetic tests (fast, headless)"
 	@echo "  make test-api-all   - Run ALL integration tests (fast, headless)"
 	@echo "  make test-perf-all  - Run ALL performance tests"
+	@echo ""
+	@echo "Environment Selection:"
+	@echo "  Default: local (http://lium-web:3000 - Docker)"
+	@echo ""
+	@echo "  Pass env= to use a different environment:"
+	@echo "    make test-syn-all env=dev       - Run against dev"
+	@echo "    make test-syn-all env=sandbox   - Run against sandbox"
+	@echo "    make test-syn-all env=staging   - Run against staging"
+	@echo ""
+	@echo "  Works with ALL test commands (test-syn-*, test-api-*, test-perf-*)"
+	@echo "  Example: make test-syn-auth env=dev"
 	@echo ""
 	@echo "Auto-Discovered Test Modules:"
 	@echo "  Synthetic (Browser):    make test-syn-<module>   (e.g., test-syn-basic, test-syn-auth)"
@@ -143,6 +163,8 @@ up: test
 # Run all tests for each pillar (non-interactive, headless, fast)
 test-syn-all: .check-auth
 	@echo "🧪 Running ALL synthetic tests (headless)..."
+	@echo "🌍 Environment: $(env)"
+	@echo ""
 	@npx playwright test --config=synthetic/playwright.config.ts
 	@if [ ! "$$CI" = "true" ] && [ -d "playwright-report" ]; then \
 		echo ""; \
@@ -152,6 +174,8 @@ test-syn-all: .check-auth
 
 test-api-all: .check-auth
 	@echo "🧪 Running ALL integration tests (headless)..."
+	@echo "🌍 Environment: $(env)"
+	@echo ""
 	@npx playwright test --config=integration/playwright.config.ts
 	@if [ ! "$$CI" = "true" ] && [ -d "playwright-report" ]; then \
 		echo ""; \
@@ -161,6 +185,8 @@ test-api-all: .check-auth
 
 test-perf-all: .check-auth
 	@echo "🧪 Running ALL performance tests..."
+	@echo "🌍 Environment: $(env)"
+	@echo ""
 	@if ! which k6 > /dev/null 2>&1; then \
 		echo "❌ k6 not installed. Run: brew install k6"; \
 		exit 1; \
@@ -178,6 +204,8 @@ test-syn-%: .check-auth
 	@MODULE_NAME=$(subst test-syn-,,$@); \
 	if [ -d "synthetic/tests/$$MODULE_NAME" ]; then \
 		echo "🧪 Running synthetic/$$MODULE_NAME tests..."; \
+		echo "🌍 Environment: $(env)"; \
+		echo ""; \
 		npx playwright test --config=synthetic/playwright.config.ts synthetic/tests/$$MODULE_NAME/; \
 	else \
 		echo "❌ Module 'synthetic/tests/$$MODULE_NAME' not found"; \
@@ -192,6 +220,8 @@ test-api-%: .check-auth
 	@MODULE_NAME=$(subst test-api-,,$@); \
 	if [ -d "integration/tests/$$MODULE_NAME" ]; then \
 		echo "🧪 Running integration/$$MODULE_NAME API tests..."; \
+		echo "🌍 Environment: $(env)"; \
+		echo ""; \
 		npx playwright test --config=integration/playwright.config.ts integration/tests/$$MODULE_NAME/; \
 	else \
 		echo "❌ Module 'integration/tests/$$MODULE_NAME' not found"; \
@@ -206,6 +236,8 @@ test-perf-%: .check-auth
 	@MODULE_NAME=$(subst test-perf-,,$@); \
 	if [ -d "performance/tests/$$MODULE_NAME" ]; then \
 		echo "🧪 Running performance/$$MODULE_NAME tests..."; \
+		echo "🌍 Environment: $(env)"; \
+		echo ""; \
 		if [ -f "performance/tests/$$MODULE_NAME/test.js" ]; then \
 			k6 run performance/tests/$$MODULE_NAME/test.js; \
 		else \
@@ -312,6 +344,23 @@ auth-clear:
 	@rm -f playwright/.auth/admin.json
 	@rm -f playwright/.auth/user.json
 	@echo "✅ All auth sessions cleared. Run auth-setup commands to re-authenticate."
+
+# JWT Credential Setup (for JWT token injection)
+creds-setup:
+	@echo "🔐 Setting up JWT credentials..."
+	@npx tsx scripts/setup-credentials.ts
+
+creds-status:
+	@echo "🔍 JWT Credential Status"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@for env in local dev sandbox staging; do \
+		if [ -f "credentials/$$env.json" ]; then \
+			echo "✅ $$env: SAVED"; \
+			stat -f "   Last updated: %Sm" credentials/$$env.json 2>/dev/null || stat -c "   Last updated: %y" credentials/$$env.json; \
+		else \
+			echo "❌ $$env: NOT SAVED"; \
+		fi; \
+	done
 
 # Configure Auth0 from lium-web
 configure:

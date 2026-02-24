@@ -547,10 +547,43 @@ Configure in `config/environments/`:
 | Sandbox     | `sandbox.json` | `https://sandbox.lium.app`      |
 | Staging     | `staging.json` | `https://staging.lium.app`      |
 
-Select environment:
+### Default Environment
 
-- **Interactively**: `make test` → Choose environment
-- **Directly**: `E2E_ENVIRONMENT=dev make test-syn-basic`
+**Tests default to `local` environment** (Docker setup at `http://lium-web:3000`).
+
+### Selecting a Different Environment
+
+**Option 1: Using `env=` parameter (Recommended)**
+
+```bash
+make test-syn-all env=dev        # Run against dev environment
+make test-syn-auth env=sandbox   # Run auth tests against sandbox
+make test-api-all env=staging    # Run API tests against staging
+```
+
+**Option 2: Using environment variable**
+
+```bash
+E2E_ENVIRONMENT=dev make test-syn-basic
+```
+
+**Option 3: Interactively**
+
+```bash
+make test   # Prompts you to choose environment
+```
+
+### Important: Environment-Specific Auth Sessions
+
+Auth sessions are saved **per environment**. If you test against multiple environments, you'll need to authenticate for each:
+
+```bash
+# Authenticate for local (default)
+make auth-setup-all
+
+# Test against dev - will prompt for dev authentication if needed
+make test-syn-all env=dev
+```
 
 ---
 

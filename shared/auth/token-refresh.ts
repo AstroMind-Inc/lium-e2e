@@ -96,10 +96,18 @@ async function checkTokenValidity(
       timeout: 10000,
     });
 
-    // Wait a moment for any redirects
-    await page.waitForTimeout(2000);
+    // Wait for any Auth0 redirect to complete (or timeout if no redirect)
+    try {
+      await page.waitForURL(
+        (url) => !url.href.includes("auth0.com"),
+        { timeout: 5000 },
+      );
+    } catch {
+      // Timeout is OK - might mean we're already on the target page
+    }
 
     // Check if we're still authenticated (not redirected to login)
+    // If we made it to the /chats route, we're authenticated
     const url = page.url();
     const isAuthenticated = url.includes("/chats") || url.includes("/chat");
 
@@ -145,8 +153,15 @@ async function attemptRefresh(
       timeout: 30000,
     });
 
-    // Wait for any background token refresh
-    await page.waitForTimeout(5000);
+    // Wait for any Auth0 redirect to complete
+    try {
+      await page.waitForURL(
+        (url) => !url.href.includes("auth0.com"),
+        { timeout: 5000 },
+      );
+    } catch {
+      // Timeout is OK - might mean we're already on the target page
+    }
 
     // Try to access a protected route
     await page.goto(baseUrl + "/chats", {
@@ -154,9 +169,18 @@ async function attemptRefresh(
       timeout: 15000,
     });
 
-    await page.waitForTimeout(2000);
+    // Wait for any Auth0 redirect to complete
+    try {
+      await page.waitForURL(
+        (url) => !url.href.includes("auth0.com"),
+        { timeout: 5000 },
+      );
+    } catch {
+      // Timeout is OK
+    }
 
     // Check if we made it to the protected route
+    // If we're on /chats, we're authenticated
     const url = page.url();
     const isAuthenticated = url.includes("/chats") || url.includes("/chat");
 
