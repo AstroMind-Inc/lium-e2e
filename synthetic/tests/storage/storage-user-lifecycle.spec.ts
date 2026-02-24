@@ -78,16 +78,25 @@ if (testFiles.length === 0) {
 
       // Click Create button
       await userPage.click('button:has-text("Create")');
+
+      // Wait for dialog to close
+      await dialog.waitFor({ state: "hidden", timeout: 5000 });
       await userPage.waitForTimeout(2000);
 
+      // Verify folder was created
       const folderExists = await userPage.locator(`text="${folderName}"`).count();
       expect(folderExists).toBeGreaterThan(0);
       console.log(`✅ Folder created\n`);
 
-      // Open folder
+      // Open folder - click on the folder link/button in the file list
       console.log(`3️⃣  Opening folder: ${folderName}`);
-      await userPage.click(`text="${folderName}"`);
+      const folderRow = userPage.locator(`tr:has-text("${folderName}"), a:has-text("${folderName}"), button:has-text("${folderName}")`).first();
+      await folderRow.click();
       await userPage.waitForTimeout(2000);
+
+      // Verify we're inside the folder (check breadcrumb or URL)
+      const insideFolder = await userPage.locator(`text="${folderName}"`).count();
+      expect(insideFolder).toBeGreaterThan(0);
       console.log(`✅ Inside folder\n`);
 
       // Upload all test files
