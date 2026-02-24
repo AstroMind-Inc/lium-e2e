@@ -7,8 +7,8 @@
 
 import { test, expect } from "../../fixtures/index.js";
 
-test.describe("Storage - Admin Read-Only Access", () => {
-  test("admin can browse and preview existing files", async ({
+test.describe("Storage - Admin (Read-Only)", () => {
+  test("[ADMIN] can browse, preview, and navigate storage", async ({
     adminPage,
     envConfig,
   }) => {

@@ -41,8 +41,8 @@ const testFiles = getTestFiles();
 if (testFiles.length === 0) {
   test.skip("No test files found in fixtures/upload-test/", () => {});
 } else {
-  test.describe("Storage - User Full Lifecycle", () => {
-    test("user can upload, preview, and delete files", async ({
+  test.describe("Storage - User (Full Access)", () => {
+    test("[USER] can upload, preview, and delete files", async ({
       userPage,
       envConfig,
     }) => {
