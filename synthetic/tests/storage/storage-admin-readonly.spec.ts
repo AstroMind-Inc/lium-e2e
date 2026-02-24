@@ -97,37 +97,38 @@ test.describe("Storage - Admin (Read-Only)", () => {
       console.log("ℹ️  No files found to preview");
     }
 
-    // Test folder navigation
+    // Test folder navigation (if folders exist)
     console.log("\n5️⃣  Testing folder navigation...");
-    const folders = await adminPage
-      .locator('tr:has([data-type="folder"]), tr:has-text("folder")')
-      .count();
 
-    if (folders > 0) {
-      const firstFolder = adminPage
-        .locator('tr:has([data-type="folder"]), tr:has-text("folder")')
-        .first();
-      const folderName = await firstFolder
-        .locator("td")
-        .first()
-        .textContent();
-      console.log(`   📁 Opening folder: ${folderName}`);
+    // Look for folders in the file list
+    const folderLinks = await adminPage.locator('tr td:first-child a, tr td:first-child button').all();
+    let foundFolder = false;
 
-      await firstFolder.click();
-      await adminPage.waitForTimeout(2000);
-
-      // Verify we're inside folder (breadcrumb)
-      const breadcrumb = await adminPage.locator("nav, .breadcrumb").count();
-      if (breadcrumb > 0) {
-        console.log("✅ Folder navigation works");
-
-        // Navigate back to root
-        await adminPage.click('a:has-text("Root"), button:has-text("Root")');
+    for (const link of folderLinks) {
+      const text = await link.textContent();
+      // Skip if it's a file (has extension)
+      if (text && !text.includes('.')) {
+        console.log(`   📁 Opening folder: ${text}`);
+        await link.click();
         await adminPage.waitForTimeout(2000);
-        console.log("✅ Navigated back to Root");
+
+        // Verify breadcrumb changed
+        const breadcrumb = await adminPage.locator('text="Root"').count();
+        if (breadcrumb > 0) {
+          console.log("✅ Folder opened");
+          foundFolder = true;
+
+          // Navigate back to root
+          await adminPage.click('a:has-text("Root"), button:has-text("Root")');
+          await adminPage.waitForTimeout(2000);
+          console.log("✅ Navigated back to Root");
+          break;
+        }
       }
-    } else {
-      console.log("ℹ️  No folders found to navigate");
+    }
+
+    if (!foundFolder) {
+      console.log("ℹ️  No folders found to test navigation");
     }
 
     console.log("\n🎉 Admin read-only access test complete!");

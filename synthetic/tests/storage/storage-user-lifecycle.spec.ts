@@ -67,8 +67,16 @@ if (testFiles.length === 0) {
       await userPage.click('button:has-text("New Folder")');
       await userPage.waitForTimeout(1000);
 
-      const folderInput = userPage.locator('input').first();
+      // Wait for dialog to appear and find the folder name input
+      const dialog = userPage.locator('[role="dialog"], .modal, [class*="dialog"]').first();
+      await dialog.waitFor({ state: "visible", timeout: 5000 });
+
+      // Find the input field for folder name (try multiple selectors)
+      const folderInput = dialog.locator('input[name="name"], input[placeholder*="name"], input[placeholder*="folder"], input[type="text"]').first();
+      await folderInput.waitFor({ state: "visible", timeout: 5000 });
       await folderInput.fill(folderName);
+
+      // Click Create button
       await userPage.click('button:has-text("Create")');
       await userPage.waitForTimeout(2000);
 
