@@ -23,8 +23,10 @@ test.describe("Admin Access", () => {
   test("admin can access dashboard", async ({ adminPage, envConfig }) => {
     console.log("🎯 Testing admin access to dashboard...");
 
-    await adminPage.goto(`${envConfig.baseUrls.web}/chats`);
-    await adminPage.waitForLoadState("networkidle");
+    await adminPage.goto(`${envConfig.baseUrls.web}/chats`, {
+      waitUntil: "domcontentloaded",
+    });
+    await adminPage.waitForTimeout(1000);
 
     const url = adminPage.url();
     expect(url.includes("/chats") || url.includes("/chat")).toBe(true);
@@ -58,8 +60,10 @@ test.describe("Regular User Access", () => {
   test("user can access dashboard", async ({ userPage, envConfig }) => {
     console.log("🎯 Testing user access to dashboard...");
 
-    await userPage.goto(`${envConfig.baseUrls.web}/chats`);
-    await userPage.waitForLoadState("networkidle");
+    await userPage.goto(`${envConfig.baseUrls.web}/chats`, {
+      waitUntil: "domcontentloaded",
+    });
+    await userPage.waitForTimeout(1000);
 
     const url = userPage.url();
     expect(url.includes("/chats") || url.includes("/chat")).toBe(true);
@@ -138,15 +142,23 @@ test.describe("Common Features", () => {
   }) => {
     console.log("🔄 Testing common features for both roles...");
 
-    // Both can access chats
-    await adminPage.goto(`${envConfig.baseUrls.web}/chats`);
-    await userPage.goto(`${envConfig.baseUrls.web}/chats`);
+    // Navigate both pages sequentially (more reliable than parallel)
+    await adminPage.goto(`${envConfig.baseUrls.web}/chats`, {
+      waitUntil: "domcontentloaded",
+    });
+    await userPage.goto(`${envConfig.baseUrls.web}/chats`, {
+      waitUntil: "domcontentloaded",
+    });
 
-    await adminPage.waitForLoadState("networkidle");
-    await userPage.waitForLoadState("networkidle");
+    // Wait a bit for any redirects to complete
+    await adminPage.waitForTimeout(2000);
+    await userPage.waitForTimeout(2000);
 
     const adminUrl = adminPage.url();
     const userUrl = userPage.url();
+
+    console.log(`Admin URL: ${adminUrl}`);
+    console.log(`User URL: ${userUrl}`);
 
     expect(adminUrl.includes("/chats") || adminUrl.includes("/chat")).toBe(
       true,
