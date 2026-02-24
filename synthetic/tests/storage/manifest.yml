@@ -1,6 +1,8 @@
 name: Storage
-description: File upload, download, and storage management
-icon: 📁
+description: File upload, preview, and delete tests (auto-discovers files in fixtures/upload-test/)
+icon: 📦
 tags:
   - storage
+  - upload
   - files
+  - auto-discover
