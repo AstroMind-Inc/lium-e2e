@@ -265,15 +265,40 @@ if (testFiles.length === 0) {
 
       console.log(`\n✅ All files processed\n`);
 
-      // Clean up folder
+      // Clean up folder - navigate back to Root first
       console.log(`6️⃣  Cleaning up...`);
-      await userPage.click('a:has-text("Root"), button:has-text("Root")');
-      await userPage.waitForTimeout(2000);
 
-      const folderRowForDelete = userPage.locator(`tr:has-text("${folderName}")`).first();
-      const folderActionsButton = folderRowForDelete.locator('button').last();
-      await folderActionsButton.click({ force: true });
+      // Click Root in breadcrumb to navigate out of folder
+      const rootLink = userPage.locator('a:has-text("Root"), button:has-text("Root"), nav a:has-text("Root")').first();
+      const rootLinkCount = await rootLink.count();
+
+      if (rootLinkCount > 0) {
+        await rootLink.click({ force: true });
+        await userPage.waitForTimeout(2000);
+        console.log("   Navigated back to Root");
+      } else {
+        // Fallback: navigate directly
+        await userPage.goto(`${envConfig.baseUrls.web}/storage`);
+        await userPage.waitForTimeout(2000);
+        console.log("   Navigated to storage root");
+      }
+
+      // Wait for file list to load
       await userPage.waitForTimeout(1000);
+
+      // Find and delete the test folder
+      const folderRowForDelete = userPage.locator(`tr:has-text("${folderName}")`).first();
+      const folderRowCount = await folderRowForDelete.count();
+
+      if (folderRowCount > 0) {
+        console.log(`   Found folder "${folderName}", deleting...`);
+        const folderActionsButton = folderRowForDelete.locator('button').last();
+        await folderActionsButton.waitFor({ state: 'visible', timeout: 5000 });
+        await folderActionsButton.click({ force: true });
+        await userPage.waitForTimeout(1000);
+      } else {
+        console.log(`   ⚠️  Folder "${folderName}" not found (may already be deleted)`);
+      }
 
       const deleteFolderOption = userPage.locator('[role="menuitem"]:has-text("Delete")').first();
       if ((await deleteFolderOption.count()) > 0) {
