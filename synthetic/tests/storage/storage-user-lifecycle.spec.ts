@@ -268,23 +268,40 @@ if (testFiles.length === 0) {
       // Clean up folder - navigate back to Root first
       console.log(`6️⃣  Cleaning up...`);
 
-      // Click Root in breadcrumb to navigate out of folder
-      const rootLink = userPage.locator('a:has-text("Root"), button:has-text("Root"), nav a:has-text("Root")').first();
-      const rootLinkCount = await rootLink.count();
+      // Take screenshot before cleanup
+      await userPage.screenshot({ path: `test-results/before-cleanup-${Date.now()}.png` });
+      console.log(`   Screenshot taken before cleanup`);
 
-      if (rootLinkCount > 0) {
-        await rootLink.click({ force: true });
-        await userPage.waitForTimeout(2000);
-        console.log("   Navigated back to Root");
+      // Navigate back to Root - use direct navigation for reliability
+      console.log(`   Navigating back to Root...`);
+      await userPage.goto(`${envConfig.baseUrls.web}/storage`);
+      await userPage.waitForTimeout(2000);
+
+      // Wait for loading if present
+      const loadingAfterNav = userPage.locator('text="Loading..."');
+      if ((await loadingAfterNav.count()) > 0) {
+        await loadingAfterNav.waitFor({ state: 'hidden', timeout: 10000 });
+      }
+
+      // Verify we're at root (breadcrumb should only show "Root", not "Root > folder")
+      const breadcrumbText = await userPage.locator('nav, [class*="breadcrumb"]').first().textContent();
+      console.log(`   Breadcrumb: "${breadcrumbText?.trim()}"`);
+
+      if (!breadcrumbText?.includes(folderName)) {
+        console.log(`   ✅ Successfully navigated to Root`);
       } else {
-        // Fallback: navigate directly
-        await userPage.goto(`${envConfig.baseUrls.web}/storage`);
+        console.log(`   ⚠️  Still inside folder, trying again...`);
+        // Try clicking Root link
+        await userPage.locator('a:has-text("Root")').first().click({ force: true });
         await userPage.waitForTimeout(2000);
-        console.log("   Navigated to storage root");
       }
 
       // Wait for file list to load
       await userPage.waitForTimeout(1000);
+
+      // Take screenshot at Root to see folder list
+      await userPage.screenshot({ path: `test-results/at-root-${Date.now()}.png` });
+      console.log(`   Screenshot taken at Root`);
 
       // Find and delete the test folder
       const folderRowForDelete = userPage.locator(`tr:has-text("${folderName}")`).first();
@@ -292,29 +309,46 @@ if (testFiles.length === 0) {
 
       if (folderRowCount > 0) {
         console.log(`   Found folder "${folderName}", deleting...`);
+
+        // Click actions button (3-dot menu)
         const folderActionsButton = folderRowForDelete.locator('button').last();
         await folderActionsButton.waitFor({ state: 'visible', timeout: 5000 });
         await folderActionsButton.click({ force: true });
-        await userPage.waitForTimeout(1000);
+        await userPage.waitForTimeout(1500); // Wait for menu to open
+
+        // Click Delete option in menu
+        const deleteFolderOption = userPage.locator('[role="menuitem"]:has-text("Delete")').first();
+        const deleteOptionCount = await deleteFolderOption.count();
+
+        if (deleteOptionCount > 0) {
+          console.log(`   Clicking Delete option...`);
+          await deleteFolderOption.click();
+          await userPage.waitForTimeout(1000);
+
+          // Confirm deletion
+          const confirmDeleteFolder = userPage.locator('button:has-text("Delete"), button:has-text("Confirm")').first();
+          const confirmCount = await confirmDeleteFolder.count();
+
+          if (confirmCount > 0) {
+            console.log(`   Confirming deletion...`);
+            await confirmDeleteFolder.click();
+            await userPage.waitForTimeout(2000);
+
+            // Verify folder was deleted
+            const folderStillVisible = await userPage.locator(`tr:has-text("${folderName}")`).count();
+            if (folderStillVisible === 0) {
+              console.log(`✅ Folder deleted successfully\n`);
+            } else {
+              console.log(`⚠️  Folder may still be visible\n`);
+            }
+          } else {
+            console.log(`⚠️  Delete confirmation button not found\n`);
+          }
+        } else {
+          console.log(`⚠️  Delete option not found in menu\n`);
+        }
       } else {
-        console.log(`   ⚠️  Folder "${folderName}" not found (may already be deleted)`);
-      }
-
-      const deleteFolderOption = userPage.locator('[role="menuitem"]:has-text("Delete")').first();
-      if ((await deleteFolderOption.count()) > 0) {
-        await deleteFolderOption.click();
-        await userPage.waitForTimeout(1000);
-
-        const confirmDeleteFolder = userPage.locator('button:has-text("Delete")').first();
-        if ((await confirmDeleteFolder.count()) > 0) {
-          await confirmDeleteFolder.click();
-          await userPage.waitForTimeout(2000);
-        }
-
-        const folderStillVisible = await userPage.locator(`text="${folderName}"`).count();
-        if (folderStillVisible === 0) {
-          console.log(`✅ Folder deleted\n`);
-        }
+        console.log(`   ⚠️  Folder "${folderName}" not found (may already be deleted)\n`);
       }
 
       console.log(`🎉 User storage lifecycle test complete!`);
