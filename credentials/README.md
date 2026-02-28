@@ -1,68 +1,55 @@
 # Credentials Directory
 
-This directory stores your **local credentials** for each environment. These files are **gitignored** and will never be committed to the repository.
+Stores **email+password credentials** for headless authentication. Files are **gitignored**
+and never committed to the repository.
 
-## Security
+## When you need this
 
-- ✅ All `*.json` files in this directory are gitignored
-- ✅ Credentials are stored locally on your machine only
-- ✅ Directory permissions are restricted (`chmod 700`)
-- ❌ Never manually commit credential files
-- ❌ Never share credential files via insecure channels
+This directory is **optional for most developers**. You only need it if you want the
+framework to silently refresh expired sessions without opening a browser window.
 
-## File Structure
+If you sign in with **Google OAuth**, skip this entirely — use `make auth-setup-all` instead.
+See the main [README](../README.md#authentication) for the full auth explanation.
 
-Each environment has its own credentials file:
+## Setup
+
+```bash
+make creds-setup                # Current environment (default: local)
+make creds-setup env=staging    # Specific environment
+```
+
+## File structure
 
 ```
 credentials/
-├── local.json     # Local development credentials
-├── dev.json       # Dev environment credentials
-├── sandbox.json   # Sandbox environment credentials
-└── staging.json   # Staging environment credentials
+├── local.json       # Local Docker credentials
+├── dev.json         # Dev environment credentials
+├── sandbox.json     # Sandbox credentials
+├── staging.json     # Staging credentials
+└── production.json  # Production credentials
 ```
 
-## File Format
-
-Each credential file follows this structure:
+## File format
 
 ```json
 {
   "regular": {
-    "username": "user@lium.com",
-    "password": "your_password",
-    "auth0ClientId": "optional_client_id"
+    "username": "test-user@astromind.com",
+    "password": "..."
   },
   "elevated": {
-    "username": "admin@lium.com",
-    "password": "admin_password"
+    "username": "admin@astromind.com",
+    "password": "..."
   },
-  "lastUpdated": "2026-02-18T10:00:00Z"
+  "lastUpdated": "2026-02-27T00:00:00Z"
 }
 ```
 
-## Setup
+`regular` = regular user account, `elevated` = admin account.
 
-Run `make credentials` to interactively setup credentials for an environment.
+## Security
 
-Or run `make setup` during initial setup to configure credentials.
-
-## Manual Setup (Advanced)
-
-If you need to manually create credential files:
-
-1. Copy the template above
-2. Replace with your actual credentials
-3. Save as `{environment}.json` in this directory
-4. Ensure file permissions are restrictive: `chmod 600 credentials/{environment}.json`
-
-## Troubleshooting
-
-**Problem**: Tests fail with authentication errors
-**Solution**: Verify credentials are correct and file exists for the environment
-
-**Problem**: Credentials not found
-**Solution**: Run `make credentials` to setup credentials
-
-**Problem**: Permission denied errors
-**Solution**: Check directory permissions with `ls -la credentials/`
+- All `*.json` files in this directory are gitignored
+- Credentials stay on your local machine only
+- Never share credential files — use `make auth-setup-all` on each machine instead
+- Directory permissions: `chmod 700` (set during `make setup`)

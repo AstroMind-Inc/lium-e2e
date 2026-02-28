@@ -58,24 +58,35 @@ export class CredentialManager {
 
     try {
       const content = await readFile(credPath, "utf-8");
-      const credentials: Credentials = JSON.parse(content);
+      const raw = JSON.parse(content);
 
+      // Support both key formats:
+      //   new format (make creds-setup): { regular, elevated }
+      //   legacy format (hand-created):  { user, admin }
       if (elevated) {
-        if (!credentials.elevated) {
+        const cred = raw.elevated ?? raw.admin;
+        if (!cred?.username) {
           throw new Error(
-            `Elevated credentials not found for environment "${env}". ` +
-              `Run 'make credentials' to setup elevated credentials.`,
+            `Admin credentials not found for environment "${env}". ` +
+              `Run 'make creds-setup' to save credentials.`,
           );
         }
-        return credentials.elevated;
+        return cred;
       }
 
-      return credentials.regular;
+      const cred = raw.regular ?? raw.user;
+      if (!cred?.username) {
+        throw new Error(
+          `User credentials not found for environment "${env}". ` +
+            `Run 'make creds-setup' to save credentials.`,
+        );
+      }
+      return cred;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new Error(
           `Credentials not found for environment "${env}". ` +
-            `Run 'make credentials' to setup credentials.`,
+            `Run 'make creds-setup' to save credentials.`,
         );
       }
       throw new Error(

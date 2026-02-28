@@ -1,148 +1,115 @@
 # Storage Tests
 
-Auto-discoverable file upload, preview, and delete tests.
+Browser tests for the Lium file storage feature, covering the full user lifecycle and admin read-only access.
 
-## How It Works
+## Test Files
 
-The test suite automatically discovers and tests **all files** in `fixtures/upload-test/`.
+### `storage-user-lifecycle.spec.ts`
 
-**Add a file → Get a test!**
+Full lifecycle test run as a regular user. Auto-discovers files from `fixtures/upload-test/` and exercises every operation for each file.
+
+**Flow (single test, ~3 minutes):**
+
+1. Navigate to `/storage`
+2. Create a dated folder: `test-{browserName}-{YYYY-MM-DD}`
+3. Enter the folder
+4. Upload all files from `fixtures/upload-test/`
+5. Dismiss the upload notification panel
+6. For each file: preview (via Radix Dialog), download, delete
+7. Navigate back to root (direct navigation to `/storage`)
+8. Delete the test folder
+
+The folder name includes `browserName` so parallel browser runs (chromium-user, firefox, webkit) do not share or collide on the same folder.
+
+### `storage-admin-readonly.spec.ts`
+
+Admin access verification. Navigates to `/admin/storage`, selects a tenant if required, and asserts:
+
+- No upload button is present (read-only confirmed)
+- Existing files are visible and browseable
+- File preview opens and closes via Radix Dialog
+- Folder navigation works (enter subfolder, navigate back to Root)
+
+Admin cannot upload or delete — the test verifies this constraint.
+
+## Current Test Fixtures
+
+```
+fixtures/upload-test/
+├── large-pdf.pdf
+├── sample-3d-duck.glb
+├── sample-image.jpeg
+└── sample-npy.npy
+```
+
+Every file in this directory is automatically included in the lifecycle test. Files starting with `.` and `README.md` are excluded.
 
 ## Adding Test Files
 
-1. **Drop any file into `fixtures/upload-test/`**:
+1. Drop any file into `fixtures/upload-test/`:
+
    ```bash
    cp ~/my-test-image.jpg synthetic/tests/storage/fixtures/upload-test/
    ```
 
-2. **Run the tests**:
+2. Run the tests — the new file is picked up automatically:
+
    ```bash
    make test-syn-storage
    ```
 
-3. **Each file gets tested automatically**:
-   - ✅ Upload the file
-   - ✅ Preview the file
-   - ✅ Delete the file
-
-## Recommended Test Files
-
-**Keep files small for fast tests:**
-
-```
-fixtures/upload-test/
-├── small-image.jpg          (~50-200 KB)
-├── test-document.pdf        (~100-500 KB)
-├── sample-spreadsheet.xlsx  (~50-200 KB)
-├── test-video.mp4           (~1-5 MB max)
-└── sample-text.txt          (<10 KB)
-```
-
-## File Naming Convention
-
-Use descriptive names that indicate what's being tested:
-
-- `small-image.jpg` - Tests basic image upload
-- `large-pdf.pdf` - Tests larger file handling
-- `special-chars-héllo.txt` - Tests Unicode filenames
-- `very-long-filename-with-many-characters.jpg` - Tests long names
-
-## What Gets Tested
-
-For each file in `fixtures/upload-test/`:
-
-1. **Upload**
-   - Navigates to `/admin/storage`
-   - Uploads the file via file input
-   - Waits for upload completion
-
-2. **Preview**
-   - Verifies file appears in the list
-   - Opens preview (if applicable)
-   - Checks preview displays correctly
-
-3. **Delete**
-   - Clicks delete button
-   - Confirms deletion
-   - Verifies file is removed from list
-
-## Updating Selectors
-
-The test file uses placeholder selectors (marked with `// TODO`). Update these in `storage.spec.ts` to match your actual app:
-
-```typescript
-// Example: Update these in storage.spec.ts
-const fileInput = adminPage.locator('input[type="file"]').first();
-await adminPage.click('[data-testid="preview-button"]');
-await adminPage.click('[data-testid="delete-button"]');
-```
+Keep files small where possible (the large PDF is intentional — it tests a "Continue" confirmation prompt for large previews).
 
 ## Running Tests
 
 ```bash
-# Run storage tests
+# Run storage tests (all browsers)
 make test-syn-storage
 
-# Run with headed browser (see what's happening)
-npx playwright test synthetic/tests/storage/ --headed --project=chromium
+# Run with headed browser
+npx playwright test synthetic/tests/storage/ --headed --project=chromium-user
 
-# Run specific browser
+# Run a specific browser project
 npx playwright test synthetic/tests/storage/ --project=firefox
 ```
 
+## Browser Compatibility Notes
+
+**Webkit (Safari):** Some downloads are handled natively by the browser without emitting a Playwright `download` event. The lifecycle test wraps `waitForEvent("download")` in a try/catch — if the event times out, the click is treated as successful (the browser handled the download natively). Do not re-click after the timeout; doing so can dispatch spurious keyboard events (e.g. CMD-K).
+
+**Overlay handling:** The test uses `force: true` on trigger button clicks when Radix Dialog overlays are still animating out (`data-state="closed"` but not yet removed from the DOM). This is correct behavior — Radix overlays block pointer events during the exit animation.
+
 ## Troubleshooting
 
-**"No test files found"**
-- Check that files exist in `fixtures/upload-test/`
-- Don't put files in subdirectories (they won't be discovered)
+**"No test files found in fixtures/upload-test/"**
 
-**Tests timing out**
-- Large files take longer to upload
-- Increase timeout in test if needed: `test.setTimeout(60000)`
+- Confirm files exist in `fixtures/upload-test/` (not in a subdirectory)
 
-**Upload fails**
-- Verify file input selector is correct
-- Check file size limits in your app
-- Ensure storage service is running
+**Test times out during upload**
+
+- `large-pdf.pdf` is intentionally large; the test allows 3 minutes total
+- Increase `test.setTimeout(...)` if your environment is slower
+
+**Folder not found during cleanup**
+
+- If the test fails mid-run, the dated folder may be left in storage
+- Delete it manually from the UI or re-run the test (it will create a new folder for today's date)
 
 ## Git
 
-Test fixtures should be committed:
+Test fixtures are committed:
+
 ```bash
 git add synthetic/tests/storage/fixtures/upload-test/
 git commit -m "Add storage test fixtures"
 ```
 
-Add to `.gitattributes` to prevent binary file issues:
+Add to `.gitattributes` to prevent binary diff noise:
+
 ```
 synthetic/tests/storage/fixtures/**/*.jpg binary
+synthetic/tests/storage/fixtures/**/*.jpeg binary
 synthetic/tests/storage/fixtures/**/*.pdf binary
-synthetic/tests/storage/fixtures/**/*.mp4 binary
+synthetic/tests/storage/fixtures/**/*.glb binary
+synthetic/tests/storage/fixtures/**/*.npy binary
 ```
-
-## Example Output
-
-```
-Storage - File Management
-  ✓ upload, preview, and delete: test-image.jpg (5.2s)
-  ✓ upload, preview, and delete: sample.pdf (4.8s)
-  ✓ upload, preview, and delete: data.txt (3.1s)
-  ✓ storage test summary (0.1s)
-
-📊 Storage Test Summary
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ Tested 3 files:
-   1. test-image.jpg (156.24 KB)
-   2. sample.pdf (342.18 KB)
-   3. data.txt (2.45 KB)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-4 passed (13.2s)
-```
-
-## Next Steps
-
-1. Add test files to `fixtures/upload-test/`
-2. Update selectors in `storage.spec.ts` to match your app
-3. Run tests: `make test-syn-storage`
-4. Iterate until all tests pass! ✅

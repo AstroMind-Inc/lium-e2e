@@ -1,804 +1,437 @@
 # Lium E2E Testing Framework
 
-> **Fast, modular, auto-discoverable** end-to-end testing for the Lium platform
-> Browser tests • API tests • Performance tests • Zero configuration
+> **Fast, modular, auto-discoverable** end-to-end testing for the Lium platform.
+> Browser tests · API tests · Performance tests · Zero configuration.
 
-## 🎯 Philosophy
+## Pillars
 
-**Turn-key operation** - Simple `make` commands, no Node.js knowledge required
-**Auto-discovery** - Add test folders, they appear automatically. No config changes needed
-**Fast by default** - Headless tests using saved auth sessions, 10x faster than headed mode
-**Three pillars** - Synthetic (browser), Integration (API), Performance (load testing)
+| Pillar | Tool | What it tests |
+|--------|------|---------------|
+| **Synthetic** | Playwright (browser) | Full user flows — UI, auth, navigation |
+| **Integration** | Playwright (API) | REST API endpoints directly |
+| **Performance** | k6 | Load, spike, and stress tests |
 
 ---
 
-## 🚀 Quick Start
+## Quick Start (First Time)
 
 ```bash
-# 1. Initial setup (one time)
-make setup
+make setup           # Install deps, browsers, k6
+make auth-setup-all  # Sign in once — opens a browser (Google OAuth works)
+make test-syn-basic  # Verify everything works
+```
 
-# 2. Authenticate (one time) - sets up both admin and user
+All `make` commands default to the **local** environment (Docker at `http://lium-web:3000`).
+
+---
+
+## Authentication
+
+Understanding auth is the key to running tests effectively across environments.
+
+### How it works
+
+The app uses Auth0 with HTTP-only encrypted cookies. There is no raw JWT token that can be
+injected — the session lives in a server-encrypted cookie. Playwright saves that complete
+browser session (cookies + storage state) to a file after a real login. Tests load the file
+and start already authenticated — no Auth0 redirect, no login delay.
+
+```
+playwright/.auth/
+  admin-local.json      ← local environment, admin session
+  user-local.json       ← local environment, user session
+  admin-staging.json    ← staging environment, admin session
+  user-staging.json     ← staging environment, user session
+  ...
+```
+
+Sessions are **per-environment** — authenticating for staging does not overwrite your local
+session. All session files are **gitignored** and stay only on your machine.
+
+### Three layers — pick the right one
+
+| Layer | How set up | Best for | Supports Google OAuth? |
+|-------|-----------|----------|----------------------|
+| **Sessions** (browser) | `make auth-setup-all` | Local dev, any environment | ✅ Yes |
+| **Credentials file** | `make creds-setup` | Headless refresh, avoiding browser popups | ❌ Email+password only |
+| **ENV vars** | `E2E_ADMIN_EMAIL` etc. | CI pipelines | ❌ Email+password only |
+
+**If you use Google OAuth (most developers):** rely on sessions only.
+Run `make auth-setup-all [env=<env>]` once per environment, sign in with Google in the
+browser that opens. That's it — you won't be prompted again until the session expires
+(typically days to weeks).
+
+**If you run CI:** create a dedicated Auth0 test account with email+password (not Google
+SSO), and pass credentials via ENV vars. See [CI Setup](#ci-setup).
+
+**`make creds-setup` is optional** even for local use. It only helps if you want the
+framework to silently refresh expired sessions without ever opening a browser window.
+
+### Session fallback chain
+
+Before every test run, global-setup checks sessions automatically:
+
+```
+1. playwright/.auth/{role}-{env}.json present and valid?
+      ✅  → tests run, no action needed
+
+2. Email/password credentials available?
+   (ENV vars  E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD
+    or file   credentials/{env}.json)
+      ✅  → headless login, session refreshed silently
+
+3. No credentials available
+      →  prints: "run make auth-setup-admin"
+         opens a browser, Google OAuth works there
+```
+
+You only need to act when you reach step 3, and only then if your session has expired.
+
+### Setting up sessions per environment
+
+```bash
+# Local (default)
 make auth-setup-all
 
-# Use credentials from 1Password > Test Accounts:
-#   Admin: your @astromind.com account
-#   User:  test-user@astromind.com (password in 1Password)
+# Any other environment
+make auth-setup-all env=dev
+make auth-setup-all env=staging
+make auth-setup-all env=production
 
-# 3. Run tests
-make test               # Interactive menu
-make test-syn-basic     # Run specific module
-make report             # View results
-```
+# Check what sessions you have
+make auth-status
+make auth-status env=staging
 
-That's it! Add test files to any module folder and they're automatically discovered.
-
----
-
-## ✨ What's New
-
-### Auto-Opening HTML Reports ⭐ NEW
-
-**Tests now automatically open the interactive report when complete!**
-
-```bash
-make test-syn-all   # Runs tests → Opens report automatically
-make test-api-all   # Runs tests → Opens report automatically
-```
-
-No manual steps - just run tests and view rich HTML results with screenshots, traces, and videos.
-
-### Unified Authentication
-
-**One auth setup works for ALL test types!**
-
-```bash
-make auth-setup-all     # Authenticate once (admin + user)
-
-# Credentials in 1Password > Test Accounts:
-#   Admin: your @astromind.com account
-#   User:  test-user@astromind.com
-
-# Now both work with same sessions:
-make test-syn-all       # Browser tests ✓
-make test-api-all       # API tests ✓ (uses same cookies)
-```
-
-Integration tests extract auth cookies from saved browser sessions - no duplicate credential management!
-
-### Auto-Discovery System
-
-**Add a folder → Tests appear automatically**
-
-```bash
-# Create new module
-mkdir synthetic/tests/my-feature
-touch synthetic/tests/my-feature/test.spec.ts
-
-# Instantly available!
-make test-syn-my-feature  # ← Auto-discovered
-make test                 # ← Shows in CLI menu
-```
-
-No code changes. No config updates. Just works.
-
-### Smart Pre-Flight Checks
-
-Before every test run:
-
-1. 🏥 **Server health check** - Ensures app/API is running (fails fast if down)
-2. 🔍 **Token validation** - Auto-refreshes expired auth sessions
-3. 🚀 **Tests** - Only runs if checks pass
-
-No more mysterious failures from expired tokens or servers being down!
-
-### Three Test Pillars
-
-| Pillar          | What It Tests                  | Command Pattern           |
-| --------------- | ------------------------------ | ------------------------- |
-| **Synthetic**   | Browser automation, user flows | `make test-syn-<module>`  |
-| **Integration** | API endpoints, contracts       | `make test-api-<module>`  |
-| **Performance** | Load, stress, throughput       | `make test-perf-<module>` |
-
----
-
-## 📦 Test Modules
-
-### Synthetic (Browser Tests)
-
-Auto-discovered from `synthetic/tests/`:
-
-```bash
-make test-syn-basic              # Health checks & smoke tests
-make test-syn-auth               # Authentication flows
-make test-syn-tenant-management  # Multi-tenant member lifecycle
-make test-syn-chats              # Chat functionality
-make test-syn-storage            # File uploads & storage
-make test-syn-agents             # AI agent tests
-make test-syn-tools              # Tool functionality
-make test-syn-tenants            # Multi-tenancy
-```
-
-### Integration (API Tests)
-
-Auto-discovered from `integration/tests/`:
-
-```bash
-make test-api-health     # API health checks
-make test-api-users      # User endpoints
-make test-api-chats      # Chat API
-make test-api-agents     # Agent API
-make test-api-tools      # Tool API
-make test-api-tenants    # Tenant API
-```
-
-### Performance (Load Tests)
-
-Auto-discovered from `performance/tests/`:
-
-```bash
-make test-perf-api-health  # API health endpoint load test
-make test-perf-api-load    # API comprehensive load testing
-make test-perf-api-spike   # API sudden traffic spike testing
-make test-perf-api-stress  # API stress test (find breaking point)
-```
-
-**Or use the interactive menu:**
-
-```bash
-make test
-# → Select pillar → Select module → Select environment → Run!
-```
-
-### Customizing Module Metadata
-
-Each test module can optionally include a `manifest.yml` file to customize its display:
-
-```yaml
-# synthetic/tests/auth/manifest.yml
-name: Authentication
-description: OAuth2/Auth0 login flows and session management
-icon: 🔐
-tags:
-  - critical
-  - auth
-  - oauth
-```
-
-**Benefits:**
-
-- **Self-documenting**: Test modules describe themselves
-- **Customizable display**: Control name, icon, description shown in CLI
-- **Tags**: Organize and filter tests (e.g., "critical", "slow")
-- **Fallback**: If no manifest exists, uses directory name with defaults
-
----
-
-## 🔐 Authentication
-
-### One-Time Setup
-
-```bash
-make auth-setup-all      # Setup both admin and user (recommended)
-# Or setup individually:
-make auth-setup-admin    # Admin only (@astromind.com)
-make auth-setup-user     # User only (test-user@astromind.com)
-```
-
-**Credentials**: Check **1Password > Test Accounts**
-- **Admin**: Use your @astromind.com account
-- **User**: `test-user@astromind.com` (password in 1Password)
-
-Opens browser → You log in via OAuth → Session saved forever
-
-### Automatic Token Management
-
-**The framework now handles token expiry automatically!**
-
-Before each test run:
-
-- ✓ Checks if tokens are still valid
-- ✓ Auto-refreshes if expired (when possible)
-- ✓ Prompts you to re-auth if refresh fails
-
-No more "authentication (logged out)" surprises mid-test!
-
-### Utility Commands
-
-```bash
-make auth-status         # Check which sessions are saved
-make auth-clear          # Clear sessions (to re-authenticate)
+# Remove sessions for an environment (forces re-auth next run)
+make auth-clear
+make auth-clear env=staging
 ```
 
 ---
 
-## 🛠️ All Commands
+## Environments
+
+| Environment | Web URL | API | Notes |
+|-------------|---------|-----|-------|
+| `local` | `http://lium-web:3000` | `http://lium-api:8000` | Docker — default |
+| `dev` | `https://app.dev.lium.ai` | VPN required | |
+| `sandbox` | `https://app.sandbox.lium.ai` | VPN required | |
+| `staging` | `https://app.staging.lium.ai` | VPN required | |
+| `production` | `https://app.lium.ai` | VPN required | |
+
+All `make` commands accept `env=` to target a different environment:
+
+```bash
+make test-syn-all env=staging
+make test-syn-auth env=dev
+make auth-setup-all env=production
+make auth-status env=sandbox
+```
+
+### VPN and integration tests
+
+**Synthetic (browser) tests** use the public web URL — no VPN needed for any environment.
+
+**Integration (API) tests** call the API directly. For every environment except `local`,
+the API requires VPN:
+
+```bash
+# Fails fast with a clear message if VPN is not connected:
+make test-api-all env=staging
+
+# With VPN connected, provide the real API URL:
+BASE_API_URL=https://api.staging.lium.ai make test-api-all env=staging
+```
+
+### Local Docker hostname
+
+The local environment uses `lium-web` as the hostname (Docker service name). Running tests
+from your host machine requires either:
+- `/etc/hosts` entry: `127.0.0.1 lium-web lium-api`
+- Or URL override: `E2E_BASE_URL=http://localhost:3000 make test-syn-all`
+
+---
+
+## Make Command Reference
 
 ### Setup
 
-```bash
-make setup               # Initial setup (deps, dirs, k6, auth)
-make install             # Install/update dependencies
-make configure           # Configure Auth0 from lium-web
-```
+| Command | Description |
+|---------|-------------|
+| `make setup` | First-time: installs deps, browsers, k6, prompts for auth |
+| `make install` | Install/update npm deps and Playwright browsers |
+| `make configure` | Sync Auth0 config from `../lium/apps/web/.env.local` |
+| `make preflight` | Format + lint + unit tests — run before committing |
 
 ### Authentication
 
-```bash
-make auth-setup-admin    # Admin (@astromind.com) authentication
-make auth-setup-user     # Regular user authentication
-make auth-setup-all      # Both admin and user
-make auth-status         # Check saved sessions
-make auth-clear          # Clear all saved sessions
+All commands accept `env=` (default: `local`).
+
+| Command | Description |
+|---------|-------------|
+| `make auth-setup-admin` | Open browser → sign in as admin → save session |
+| `make auth-setup-user` | Open browser → sign in as regular user → save session |
+| `make auth-setup-all` | Both admin and user in one step |
+| `make auth-status` | Show session status for current env |
+| `make auth-status env=staging` | Show session status for staging |
+| `make auth-clear` | Delete sessions for current env |
+| `make auth-clear env=staging` | Delete staging sessions only |
+
+### Credentials (email+password)
+
+Only needed for CI or local headless auto-refresh. Skippable for Google OAuth users.
+
+| Command | Description |
+|---------|-------------|
+| `make creds-setup` | Save email+password for current env (prompted interactively) |
+| `make creds-setup env=staging` | Save credentials for staging |
+| `make creds-status` | Show which environments have credentials saved |
+
+### Running Tests
+
+All test commands accept `env=` (default: `local`).
+
+#### Full suite
+
+| Command | Description |
+|---------|-------------|
+| `make test-syn-all` | All synthetic browser tests |
+| `make test-api-all` | All integration API tests |
+| `make test-perf-all` | All performance tests (requires k6) |
+
+#### By module
+
+Test modules are auto-discovered from the filesystem — add a folder, get a command:
+
+```
+synthetic/tests/<module>/    →  make test-syn-<module>
+integration/tests/<module>/  →  make test-api-<module>
+performance/tests/<module>/  →  make test-perf-<module>
 ```
 
-### Testing - Interactive
+Current synthetic modules:
+
+| Command | What it tests |
+|---------|---------------|
+| `make test-syn-basic` | Smoke tests — is the app up? |
+| `make test-syn-auth` | RBAC, CMD-K command palette |
+| `make test-syn-chats` | Chat create / message / rename / delete |
+| `make test-syn-storage` | File upload, preview, download, delete — all browsers |
+| `make test-syn-tenant-management` | Add/remove users from tenants |
+| `make test-syn-workflows` | Workflow functionality |
+
+#### Interactive runner
 
 ```bash
-make test                # Interactive test runner (recommended!)
-make up                  # Alias for 'make test'
+make test   # (or: make up)
 ```
 
-### Testing - Direct (Auto-Discovered)
+Prompts for pillar, module, and environment. Good for exploration.
 
-**Pattern rules** - Just add folders, commands work automatically:
+### Results and Reports
 
-```bash
-make test-syn-<module>   # Synthetic: synthetic/tests/<module>/
-make test-api-<module>   # Integration: integration/tests/<module>/
-make test-perf-<module>  # Performance: performance/tests/<module>/
-```
+| Command | Description |
+|---------|-------------|
+| `make report` | Open latest HTML report (screenshots, traces, videos) |
+| `make results` | JSONL summary — synthetic tests |
+| `make results-api` | JSONL summary — integration tests |
+| `make results-flaky` | Find tests that flip between pass/fail |
 
-Examples:
-
-```bash
-make test-syn-basic      # Basic health checks
-make test-api-users      # User API tests
-make test-perf-homepage  # Homepage load test
-```
-
-### Testing - Full Suites
-
-```bash
-make test-syn-all        # Run ALL synthetic tests (fast, headless)
-make test-api-all        # Run ALL integration tests (fast, headless)
-make test-perf-all       # Run ALL performance tests
-```
-
-### Quality Checks
-
-```bash
-make preflight           # Run all quality checks (format, lint, test, coverage)
-```
-
-### Results
-
-```bash
-make report              # Open interactive HTML report (opens automatically after test runs)
-make results             # CLI summary (JSONL - future: automated tracking)
-make results-flaky       # Find flaky tests (future)
-```
-
-**Note:** HTML reports now open automatically after running `make test-syn-all` or `make test-api-all`!
+Reports open automatically after `make test-syn-all` / `make test-api-all` on non-CI runs.
 
 ### Cleanup
 
+| Command | Description |
+|---------|-------------|
+| `make clean` | Remove node_modules, dist, coverage, reports |
+| `make clean-reports` | Remove HTML reports only (JSONL preserved) |
+| `make down` | Kill any running Playwright / k6 processes |
+
+---
+
+## CI Setup
+
 ```bash
-make clean               # Remove node_modules & artifacts
-make down                # Stop running tests
+# Required
+export E2E_ENVIRONMENT=staging
+export E2E_ADMIN_EMAIL=admin@astromind.com
+export E2E_ADMIN_PASSWORD=<secret>
+export E2E_USER_EMAIL=test-user@astromind.com
+export E2E_USER_PASSWORD=<secret>
+
+# Integration tests only (API requires VPN in CI too)
+export BASE_API_URL=https://api.staging.lium.ai
+
+# Run
+make test-syn-all
+```
+
+Global-setup detects the ENV vars on first run, performs headless login, and saves sessions
+automatically. No `make auth-setup-*` needed.
+
+**Important:** CI accounts must use **email+password login in Auth0**, not Google OAuth.
+Google OAuth requires an interactive browser — it cannot be automated headlessly.
+
+---
+
+## Writing Tests
+
+### Use the right fixture
+
+```typescript
+import { test, expect } from "../../fixtures/index.js";
+
+// Admin-authenticated browser (session from playwright/.auth/admin-{env}.json)
+test("admin can access dashboard", async ({ adminPage, envConfig }) => {
+  await adminPage.goto(`${envConfig.baseUrls.web}/admin`);
+  expect(adminPage.url()).toContain("/admin");
+});
+
+// User-authenticated browser (session from playwright/.auth/user-{env}.json)
+test("user can view chats", async ({ userPage, envConfig }) => {
+  await userPage.goto(`${envConfig.baseUrls.web}/chats`);
+  expect(userPage.url()).toContain("/chats");
+});
+
+// Unauthenticated browser — tests the login redirect
+test("unauthenticated redirects to login", async ({ page, envConfig }) => {
+  await page.goto(`${envConfig.baseUrls.web}/admin`);
+  expect(page.url()).toContain("auth0.com");
+});
+```
+
+### Available fixtures
+
+| Fixture | Type | Description |
+|---------|------|-------------|
+| `adminPage` | `Page` | Browser with admin session loaded |
+| `userPage` | `Page` | Browser with user session loaded |
+| `page` | `Page` | Unauthenticated browser |
+| `envConfig` | `EnvironmentConfig` | URLs, Auth0 config, timeouts |
+| `environment` | `Environment` | Current environment name (`"local"`, `"staging"`, …) |
+| `credentials` | object | Email+password credentials (if configured) |
+| `auth0Helper` | `Auth0Helper` | Programmatic Auth0 operations |
+
+### File naming drives project assignment
+
+Playwright assigns the right session automatically based on the spec filename:
+
+| Filename contains | Playwright project | Session loaded |
+|------------------|--------------------|----------------|
+| `admin` | `chromium-admin` | `admin-{env}.json` |
+| `user` | `chromium-user` | `user-{env}.json` |
+| `tenant-management` | `chromium-tenant` | Both admin and user (manual contexts) |
+| Neither | `chromium` | None (unauthenticated) |
+
+For tests requiring both roles in one file (e.g. `member-lifecycle.spec.ts`), create
+contexts manually using `browser.newContext({ storageState: <path> })`.
+
+**Test execution order:** The `chromium-tenant` project declares `dependencies` on all other
+projects (`chromium`, `chromium-admin`, `chromium-user`, `firefox`, `webkit`). Tenant-management
+tests therefore run only after the full suite completes. This prevents the member-lifecycle
+test — which removes a user from a tenant during setup — from interfering with concurrent
+user-authenticated tests running in other projects.
+
+### Test file locations
+
+```
+synthetic/tests/
+  basic/               ← smoke tests, no auth required
+  auth/                ← RBAC, command palette
+  chats/               ← chat lifecycle
+  storage/             ← file/folder management
+  tenant-management/   ← multi-user admin flows
+  workflows/           ← workflow tests
 ```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lium-e2e/
-├── config/
-│   └── environments/        # Environment configs (local, dev, sandbox, staging)
-│       ├── local.json
-│       ├── dev.json
-│       ├── sandbox.json
-│       └── staging.json
+├── config/environments/         Environment configs (committed — public Auth0 values)
+│   ├── local.json
+│   ├── dev.json
+│   ├── sandbox.json
+│   ├── staging.json
+│   └── production.json
 │
-├── playwright/
-│   └── .auth/               # Saved auth sessions (gitignored)
-│       ├── admin.json
-│       └── user.json
+├── playwright/.auth/            Saved browser sessions (gitignored, per-environment)
+│   ├── admin-local.json
+│   ├── user-local.json
+│   ├── admin-staging.json
+│   └── ...
 │
-├── synthetic/               # Pillar 1: Browser tests (Playwright)
-│   ├── auth-setup/          # Authentication setup scripts
-│   ├── fixtures/            # Custom Playwright fixtures
-│   ├── tests/               # 📂 Auto-discovered modules
-│   │   ├── basic/           # Health checks
-│   │   ├── auth/            # Auth flows
-│   │   ├── tenant-management/ # Multi-tenant member lifecycle
-│   │   ├── chats/           # Chat functionality
-│   │   ├── storage/         # File uploads
-│   │   ├── agents/          # AI agents
-│   │   ├── tools/           # Tools
-│   │   └── tenants/         # Multi-tenancy
+├── credentials/                 Email+password credentials (gitignored, per-environment)
+│   ├── local.json
+│   ├── staging.json
+│   └── ...
+│
+├── synthetic/                   Pillar 1: Browser tests (Playwright)
+│   ├── tests/                   Auto-discovered test modules
+│   ├── fixtures/index.ts        adminPage, userPage, envConfig fixtures
+│   ├── global-setup.ts          Health check + session validation
+│   ├── auth-setup/              Session setup scripts
 │   └── playwright.config.ts
 │
-├── integration/             # Pillar 2: API tests (Playwright)
-│   ├── fixtures/            # API test fixtures
-│   ├── tests/               # 📂 Auto-discovered modules
-│   │   ├── health/          # API health checks
-│   │   ├── users/           # User endpoints
-│   │   ├── chats/           # Chat API
-│   │   ├── agents/          # Agent API
-│   │   ├── tools/           # Tool API
-│   │   └── tenants/         # Tenant API
+├── integration/                 Pillar 2: API tests (Playwright)
+│   ├── tests/                   Auto-discovered test modules
+│   ├── global-setup.ts          API reachability + VPN check
 │   └── playwright.config.ts
 │
-├── performance/             # Pillar 3: Performance tests (k6)
-│   └── tests/               # 📂 Auto-discovered modules
-│       ├── api-health/      # Health endpoint load test
-│       │   ├── test.js
-│       │   └── manifest.yml
-│       ├── api-load/        # Comprehensive load testing
-│       │   ├── test.js              # Simple baseline (default)
-│       │   ├── advanced.js          # Production-ready scenarios
-│       │   ├── manifest.yml
-│       │   ├── README.md
-│       │   └── POC-SUMMARY.md
-│       ├── api-spike/       # Spike testing
-│       │   ├── test.js
-│       │   └── manifest.yml
-│       └── api-stress/      # Stress testing
-│           ├── test.js
-│           └── manifest.yml
+├── performance/                 Pillar 3: Load tests (k6)
+│   └── tests/                   Auto-discovered test modules
 │
-├── shared/                  # Shared utilities
-│   ├── auth/                # Auth helpers (Auth0, OAuth, JWT)
-│   ├── credentials/         # Credential management
-│   ├── environment/         # Environment config loader
-│   ├── results/             # Result persistence (JSONL)
-│   ├── reporting/           # Reporters (Slack, HTML)
-│   └── test-discovery/      # Auto-discovery system ⭐
-│       └── module-scanner.ts
+├── shared/
+│   ├── auth/
+│   │   └── headless-login.ts    Core headless login engine + session management
+│   ├── credentials/
+│   │   └── credential-manager.ts
+│   ├── environment/
+│   │   └── env-selector.ts
+│   └── types/index.ts
 │
-├── ui/
-│   └── cli/                 # Interactive CLI
-│       ├── index.ts
-│       ├── prompts.ts
-│       ├── test-runner.ts   # Pre-flight checks, execution
-│       └── results-viewer.ts
-│
-├── tests/                   # Internal framework tests
-│   └── unit/                # Unit tests for the framework itself
-│
-├── playwright-report/       # Consolidated HTML reports
-├── test-results/            # Test artifacts (screenshots, videos)
-├── Makefile                 # Turn-key commands
-└── package.json
+├── results/                     JSONL test results (gitignored)
+├── playwright-report/           HTML reports (gitignored)
+├── test-results/                Screenshots, videos, traces (gitignored)
+└── Makefile
 ```
 
 ---
 
-## ✍️ Writing Tests
+## Preflight (Framework Health)
 
-### Synthetic (Browser) Tests
+Validates the framework itself before running tests:
 
-Create tests in any module under `synthetic/tests/`:
-
-```typescript
-// synthetic/tests/my-feature/test.spec.ts
-import { test, expect } from "../../fixtures/index.js";
-
-test.describe("My Feature", () => {
-  test("can do something", async ({ page, envConfig }) => {
-    // Already authenticated via saved session!
-    await page.goto(`${envConfig.baseUrls.web}/my-feature`);
-
-    await page.click('[data-testid="action-button"]');
-    await expect(page.locator(".result")).toBeVisible();
-  });
-});
+```bash
+make preflight
 ```
 
-**Auto-discovered immediately:**
-
-- `make test-syn-my-feature` works
-- Shows in `make test` menu
-
-### UI Discovery Methodology
-
-When writing tests for new UI features, use automated discovery tests to find correct selectors:
-
-1. **Create discovery test** to explore the UI:
-
-```typescript
-test("discover UI elements", async ({ page }) => {
-  await page.goto("/");
-
-  // Log all buttons
-  const buttons = await page.locator("button").all();
-  for (const btn of buttons) {
-    const text = await btn.textContent();
-    const ariaLabel = await btn.getAttribute("aria-label");
-    console.log(`Button: "${text}" [aria-label="${ariaLabel}"]`);
-  }
-
-  // Take screenshot for reference
-  await page.screenshot({ path: "discovery.png", fullPage: true });
-});
-```
-
-2. **Run the discovery test** to examine output
-3. **Document verified selectors** in `SELECTORS.md`
-4. **Write production tests** using verified selectors
-
-**Example**: See `synthetic/tests/tenant-management/SELECTORS.md` for documented selectors
-
-### Integration (API) Tests
-
-Create tests in any module under `integration/tests/`:
-
-```typescript
-// integration/tests/my-api/test.spec.ts
-import { test, expect } from "@playwright/test";
-
-test("GET /my-endpoint returns 200", async ({ request }) => {
-  const response = await request.get("/my-endpoint");
-
-  expect(response.ok()).toBeTruthy();
-  const body = await response.json();
-  expect(body).toHaveProperty("data");
-});
-```
-
-**Auto-discovered immediately:**
-
-- `make test-api-my-api` works
-- Shows in `make test` menu
-
-### Performance (k6) Tests
-
-Create tests in any module under `performance/tests/`:
-
-```javascript
-// performance/tests/my-load/test.js
-import http from "k6/http";
-import { check } from "k6";
-
-export const options = {
-  stages: [
-    { duration: "30s", target: 10 }, // Ramp up
-    { duration: "1m", target: 10 }, // Stay
-    { duration: "30s", target: 0 }, // Ramp down
-  ],
-  thresholds: {
-    http_req_duration: ["p(95)<500"], // 95% < 500ms
-  },
-};
-
-export default function () {
-  const res = http.get(process.env.BASE_URL || "http://localhost:3000");
-  check(res, { "status is 200": (r) => r.status === 200 });
-}
-```
-
-**Auto-discovered immediately:**
-
-- `make test-perf-my-load` works
-- Shows in `make test` menu
-
-### Performance Testing Features
-
-Comprehensive k6 performance testing with multiple scenarios:
-
-**Test Scenarios:**
-
-- **Baseline** (Constant Load) - Establish normal performance
-
-  ```javascript
-  executor: "constant-vus";
-  vus: 10;
-  duration: "2m";
-  ```
-
-- **Spike** (Sudden Traffic) - Test system resilience
-
-  ```javascript
-  stages: [
-    { duration: "10s", target: 50 }, // Spike up
-    { duration: "30s", target: 50 }, // Sustain
-    { duration: "10s", target: 0 }, // Ramp down
-  ];
-  ```
-
-- **Stress** (Find Limits) - Gradually increase to find breaking point
-  ```javascript
-  stages: [
-    { duration: "1m", target: 20 },
-    { duration: "1m", target: 40 },
-    { duration: "1m", target: 60 },
-    { duration: "1m", target: 80 },
-  ];
-  ```
-
-**User Behavior Simulation:**
-
-- 50% Read-Heavy: Browsing, listing, viewing
-- 30% Balanced: Mix of reads and writes
-- 20% Write-Heavy: Creating, updating, uploading
-
-**Custom Metrics:**
-
-```javascript
-const errorRate = new Rate("errors");
-const apiLatency = new Trend("api_latency");
-const authFailures = new Counter("auth_failures");
-```
-
-**See**: `performance/tests/api-load/POC-SUMMARY.md` for full details
+Runs: Prettier format → ESLint → 122 unit tests → coverage check (≥ 80%).
 
 ---
 
-## 🌍 Environments
+## Troubleshooting
 
-Configure in `config/environments/`:
+**"session expired or missing — run make auth-setup-admin"**
+→ Run `make auth-setup-admin [env=<env>]`. Sign in with Google OAuth or email+password.
 
-| Environment | File           | URL Example                     |
-| ----------- | -------------- | ------------------------------- |
-| Local       | `local.json`   | `http://lium-web:3000` (Docker) |
-| Dev         | `dev.json`     | `https://dev.lium.app`          |
-| Sandbox     | `sandbox.json` | `https://sandbox.lium.app`      |
-| Staging     | `staging.json` | `https://staging.lium.app`      |
+**"Cannot reach host: http://lium-web:3000"**
+→ Start Docker: `cd ../lium && docker compose up -d`
+→ Or use: `E2E_BASE_URL=http://localhost:3000 make test-syn-all`
 
-### Default Environment
+**"API requires VPN access for staging"**
+→ Connect to VPN, then: `BASE_API_URL=https://api.staging.lium.ai make test-api-all env=staging`
 
-**Tests default to `local` environment** (Docker setup at `http://lium-web:3000`).
+**"k6 is not installed"**
+→ `brew install k6`
 
-### Selecting a Different Environment
+**Tests hang or redirect to Auth0 unexpectedly**
+→ Check `make auth-status` — the session may be expired.
+→ Run `make auth-setup-all` to refresh.
 
-**Option 1: Using `env=` parameter (Recommended)**
-
-```bash
-make test-syn-all env=dev        # Run against dev environment
-make test-syn-auth env=sandbox   # Run auth tests against sandbox
-make test-api-all env=staging    # Run API tests against staging
-```
-
-**Option 2: Using environment variable**
-
-```bash
-E2E_ENVIRONMENT=dev make test-syn-basic
-```
-
-**Option 3: Interactively**
-
-```bash
-make test   # Prompts you to choose environment
-```
-
-### Important: Environment-Specific Auth Sessions
-
-Auth sessions are saved **per environment**. If you test against multiple environments, you'll need to authenticate for each:
-
-```bash
-# Authenticate for local (default)
-make auth-setup-all
-
-# Test against dev - will prompt for dev authentication if needed
-make test-syn-all env=dev
-```
-
----
-
-## 📊 Viewing Results
-
-### Interactive HTML Report (Recommended)
-
-```bash
-make report
-```
-
-Shows:
-
-- ✅ Pass/fail status for all tests
-- 📸 Screenshots (for failed tests)
-- 🎥 Videos (for failed tests)
-- 📊 Timeline, duration, retries
-- 🔍 Detailed error messages
-
-**Consolidated view**: All test runs (synthetic + integration) in one report!
-
-### CLI Summary (Coming Soon)
-
-```bash
-make results
-```
-
-Future: JSONL-based historical tracking and trend analysis.
-
----
-
-## 🐛 Troubleshooting
-
-### "No auth session found"
-
-```bash
-make auth-setup-all
-```
-
-### "Authentication expired"
-
-**The framework now auto-checks this before tests!**
-
-If auto-refresh fails, you'll see:
-
-```
-⚠️  Authentication sessions expired and could not be refreshed
-? Would you like to re-authenticate now? (Y/n)
-```
-
-Choose Yes, then run the suggested command.
-
-### "Web app is not accessible"
-
-**The framework now checks server health before tests!**
-
-Make sure your app is running:
-
-```bash
-cd lium/apps/web && npm run dev
-# or
-docker-compose up
-```
-
-### "k6 is not installed"
-
-```bash
-brew install k6  # macOS
-```
-
-During `make setup`, k6 install is prompted automatically.
-
-### "No HTML report found"
-
-```bash
-make test-syn-basic  # Run tests first
-make report          # Then view report
-```
-
-### Tests running in headed mode (browser visible)
-
-By default, tests run **headless** (fast, no browser window).
-
-To run headed (browser visible):
-
-```bash
-# Add --headed flag in playwright.config.ts or:
-npx playwright test --headed synthetic/tests/basic/
-```
-
----
-
-## 🔒 Security
-
-- ✅ Auth sessions stored locally (`playwright/.auth/` - gitignored)
-- ✅ No passwords in code or config
-- ✅ OAuth login (secure, interactive)
-- ✅ Credentials never committed (`.gitignore` enforced)
-- ✅ File permissions restricted (`chmod 700 credentials/`)
-
----
-
-## 🧪 Quality Checks (Preflight)
-
-The framework has **internal quality checks** to ensure reliability:
-
-```bash
-make preflight           # Run all checks (format + lint + test + coverage)
-```
-
-**Preflight checks:**
-
-1. **Formatting** - Prettier auto-formats all code
-2. **Linting** - ESLint with auto-fix for code quality
-3. **Unit Tests** - 122 tests ensuring framework reliability
-4. **Coverage** - 88.55% coverage (exceeds 80% goal)
-
-Tests cover:
-
-- Credential management
-- Environment selection
-- Result persistence (JSONL)
-- Auth helpers (Auth0, OAuth, JWT)
-- CLI utilities
-- Slack reporting
-
-**Current Coverage**: 88.55% (✅ exceeds 80% threshold)
-
----
-
-## 🚦 How It Works
-
-### Pre-Flight Checks (Automatic)
-
-Every test run performs these checks:
-
-1. **🏥 Server Health Check**
-   - Pings web app (for synthetic tests)
-   - Pings API (for integration tests)
-   - Prompts if server is down
-
-2. **🔍 Token Validation**
-   - Checks if auth sessions are valid
-   - Auto-refreshes if expired (when possible)
-   - Prompts to re-auth if refresh fails
-
-3. **🚀 Test Execution**
-   - Only runs if above checks pass
-   - Clear error messages if something's wrong
-
-### Auto-Discovery System
-
-The `ModuleScanner` class automatically finds test modules:
-
-```typescript
-// Scans: synthetic/tests/
-// Finds: basic/, auth/, chats/, storage/, ...
-// Generates: test-syn-basic, test-syn-auth, test-syn-chats, ...
-```
-
-**Magic happens in:**
-
-- `shared/test-discovery/module-scanner.ts` - Filesystem scanning
-- `Makefile` - Pattern rules (`test-syn-%`, `test-api-%`, `test-perf-%`)
-- `ui/cli/prompts.ts` - Dynamic menu generation
-
-**Benefits:**
-
-- Add folder → Command works immediately
-- No code changes needed
-- Scalable to unlimited modules
-- Clean UI (empty modules auto-hidden)
-
----
-
-## 📚 Additional Documentation
-
-- `synthetic/tests/README.md` - Test module auto-discovery details
-- `ROADMAP.md` - Future enhancements and priorities
-- `SETUP.md` - Detailed setup guide (for new team members)
-
----
-
-## 🎯 Quick Workflow
-
-```bash
-# One-time setup
-make setup
-make auth-setup-all
-
-# Daily workflow
-make test                   # Interactive menu
-# or
-make test-syn-basic         # Direct command
-make report                 # View results
-
-# Add new tests
-mkdir synthetic/tests/my-feature
-touch synthetic/tests/my-feature/test.spec.ts
-make test-syn-my-feature    # ← Auto-discovered!
-```
-
----
-
-## 💡 Design Principles
-
-1. **Turn-key operation** - Simple `make` commands, minimal hand-holding
-2. **Open/Closed Principle** - Add tests without modifying framework code
-3. **Fast by default** - Headless tests, saved sessions, parallel execution
-4. **Auto-discovery** - Zero-config test organization
-5. **Fail-fast with context** - Pre-flight checks, clear error messages
-6. **Security-first** - Local credentials, OAuth, gitignored secrets
-
----
-
-**Focus**: Fast, simple, modular POC testing for internal teams
-
-🚀 **Get started**: `make setup` → `make test`
+**Download events not firing in webkit**
+→ This is expected. Webkit handles some downloads natively without emitting a Playwright
+`download` event. The storage tests catch this with a try/catch: if the event times out,
+the click is still considered successful (the browser initiated the download natively).

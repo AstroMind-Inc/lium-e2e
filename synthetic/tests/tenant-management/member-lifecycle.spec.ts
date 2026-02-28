@@ -9,6 +9,10 @@
  *
  * Setup: Removes test user from tenant if exists
  * Teardown: Restores test user to tenant for other tests
+ *
+ * NOTE: No explicit logout/login cycles — the app checks tenant membership
+ * per-request. Logging out via /api/auth/logout invalidates the Auth0
+ * server-side session, breaking subsequent interactions in the same context.
  */
 
 import { test, expect } from "../../fixtures/index.js";
@@ -21,75 +25,99 @@ const TEST_USER_EMAIL = "test-user@astromind.com";
 const TENANT_NAME = "seismic";
 
 /**
- * Helper: Switch to Admin workspace
+ * Helper: Switch to Admin workspace.
+ * Uses "load" (not networkidle — hangs in firefox/webkit with long-polling,
+ * not domcontentloaded — React hasn't hydrated yet when that fires).
  */
 async function switchToAdminWorkspace(page: any, baseUrl: string) {
-  await page.goto(baseUrl);
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(1000);
+  await page.goto(baseUrl, { waitUntil: "load" });
 
-  // Click account menu (verified selector)
+  // Wait for account menu — original verified selector
+  // 30s — server may be slow under full-suite parallel test load
+  await page.locator('[aria-label="Account menu"]').waitFor({
+    state: "visible",
+    timeout: 30000,
+  });
   await page.locator('[aria-label="Account menu"]').click();
   await page.waitForTimeout(500);
 
-  // Click "Admin" link (verified selector)
+  // Click "Admin" link in the dropdown
+  await page.locator('a:has-text("Admin")').waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
   await page.locator('a:has-text("Admin")').click();
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(2000);
+
+  // Wait for tenants table to confirm we landed in Admin workspace
+  // 60s — full-suite parallel load can make the admin page significantly slower
+  await page.locator('tr:has-text("Seismic")').waitFor({
+    state: "visible",
+    timeout: 60000,
+  });
 }
 
 /**
  * Helper: Open Seismic tenant management
  */
 async function openSeismicTenantManagement(page: any) {
-  // Find Seismic tenant row (verified selector)
   const seismicRow = page.locator('tr:has-text("Seismic")');
+  await seismicRow.waitFor({ state: "visible", timeout: 10000 });
 
-  // Click three-dot actions menu (verified selector)
-  await seismicRow.locator('button[aria-label*="more" i]').click();
+  // Click three-dot actions menu (case-sensitive — avoid CSS4 i-flag)
+  const moreButton = seismicRow.locator(
+    'button[aria-label*="more"], button[aria-label*="More"], button[aria-label*="actions"], button[aria-label*="Actions"]',
+  );
+  await moreButton.waitFor({ state: "visible", timeout: 5000 });
+  await moreButton.click();
   await page.waitForTimeout(500);
 
-  // Click "Manage" option (verified selector)
-  await page.locator("text=/^Manage$/i").click();
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(2000);
+  // Click "Manage" option
+  await page.locator('[role="menuitem"]:has-text("Manage")').waitFor({
+    state: "visible",
+    timeout: 5000,
+  });
+  await page.locator('[role="menuitem"]:has-text("Manage")').click();
+
+  // Wait for the Email input inside the dialog — concrete signal the dialog opened
+  await page.locator('input[placeholder="Email"]').waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
 }
 
+const sessionEnv = process.env.E2E_ENVIRONMENT || "local";
+const ADMIN_AUTH = path.resolve(
+  __dirname,
+  `../../../playwright/.auth/admin-${sessionEnv}.json`,
+);
+const USER_AUTH = path.resolve(
+  __dirname,
+  `../../../playwright/.auth/user-${sessionEnv}.json`,
+);
+
 test.describe("Tenant Member Management Flow", () => {
-  // Increase timeout for this complex multi-step test
-  test.setTimeout(120000); // 2 minutes
+  // This test modifies shared server state (tenant membership).
+  // It runs exclusively in the chromium-tenant project (see playwright.config.ts),
+  // which depends on all other projects completing first — preventing parallel conflicts.
+  test.setTimeout(180000); // 3 min — multi-step flow with multiple page navigations
 
   let adminContext: any;
   let userContext: any;
   let adminPage: any;
   let userPage: any;
 
-  // Setup: Create browser contexts for both users
   test.beforeAll(async ({ browser }) => {
     console.log("🔧 Setting up browser contexts...");
 
-    // Create admin context
-    adminContext = await browser.newContext({
-      storageState: path.resolve(
-        __dirname,
-        "../../../playwright/.auth/admin.json",
-      ),
-    });
+    adminContext = await browser.newContext({ storageState: ADMIN_AUTH });
     adminPage = await adminContext.newPage();
 
-    // Create user context
-    userContext = await browser.newContext({
-      storageState: path.resolve(
-        __dirname,
-        "../../../playwright/.auth/user.json",
-      ),
-    });
+    userContext = await browser.newContext({ storageState: USER_AUTH });
     userPage = await userContext.newPage();
 
     console.log("✅ Browser contexts ready\n");
   });
 
-  // Cleanup: Close contexts
   test.afterAll(async () => {
     console.log("\n🧹 Cleaning up browser contexts...");
     await adminContext?.close();
@@ -100,185 +128,144 @@ test.describe("Tenant Member Management Flow", () => {
     const baseUrl = envConfig.baseUrls.web;
 
     // ============================================================
-    // SETUP: Remove test-user@astromind.com if exists
+    // SETUP: Remove test-user@astromind.com if already in tenant
     // ============================================================
     console.log("📋 SETUP: Removing test user from tenant if exists...\n");
 
-    await adminPage.goto(baseUrl);
-    await adminPage.waitForLoadState("networkidle");
-
-    // Navigate to Admin workspace and open Seismic management
-    console.log(
-      "1️⃣-3️⃣  Navigating to Admin and opening Seismic tenant management...",
-    );
     await switchToAdminWorkspace(adminPage, baseUrl);
     await openSeismicTenantManagement(adminPage);
     console.log("   ✓ Seismic tenant management opened\n");
 
-    // Try to remove test user if present (setup cleanup)
-    console.log("4️⃣  Checking if test user exists...");
     const testUserExists =
       (await adminPage.locator(`text=${TEST_USER_EMAIL}`).count()) > 0;
 
     if (testUserExists) {
       console.log(`   ℹ️  Test user found, removing...`);
-      // Click remove button (trash icon) - verified selector
       const removeButton = adminPage.locator(
         `button[aria-label="Remove ${TEST_USER_EMAIL}"]`,
       );
+      await removeButton.waitFor({ state: "visible", timeout: 5000 });
       await removeButton.click();
-      await adminPage.waitForTimeout(1000);
-
-      console.log("   ✓ Test user removed (cleanup)\n");
+      // Wait for the user to actually disappear from the list before proceeding
+      await adminPage
+        .locator(`text=${TEST_USER_EMAIL}`)
+        .waitFor({ state: "hidden", timeout: 10000 });
+      console.log("   ✓ Test user removed (setup cleanup)\n");
     } else {
       console.log("   ✓ Test user not present (clean state)\n");
     }
 
-    // Close modal
     await adminPage.locator('button:has-text("Close")').first().click();
-    await adminPage.waitForTimeout(500);
-
-    // ============================================================
-    // STORY STEP 1-6: Admin adds user
-    // ============================================================
-    console.log("📖 STORY: Starting tenant member management flow...\n");
-
-    console.log("1️⃣  Admin signing in...");
-    await adminPage.goto(baseUrl);
-    await adminPage.waitForLoadState("networkidle");
-    expect(adminPage.url()).not.toContain("auth0.com");
-    console.log("   ✓ Admin authenticated\n");
-
-    console.log("2️⃣  Admin navigating to Admin workspace...");
-    await switchToAdminWorkspace(adminPage, baseUrl);
-    console.log("   ✓ Switched to Admin workspace\n");
-
-    console.log("3️⃣-4️⃣  Opening seismic tenant management...");
-    await openSeismicTenantManagement(adminPage);
-    console.log("   ✓ Tenant management opened\n");
-
-    console.log("5️⃣  Adding test-user@astromind.com as member...");
-
-    // Fill in email in the "Add Invitee" section - verified selector
-    const emailInput = adminPage.locator('input[placeholder="Email"]');
-    await emailInput.fill(TEST_USER_EMAIL);
-
-    // Click "Invite user to tenant" button - verified selector
-    await adminPage.locator('button:has-text("Invite user to tenant")').click();
+    // Extra pause to let the server-side removal fully propagate before re-inviting
     await adminPage.waitForTimeout(2000);
 
-    // Verify user added (should appear in Tenant Users section)
+    // ============================================================
+    // STEP 1: Admin adds test user to seismic tenant
+    // ============================================================
+    console.log("1️⃣  Admin adding test user to seismic tenant...");
+
+    await switchToAdminWorkspace(adminPage, baseUrl);
+    await openSeismicTenantManagement(adminPage);
+
+    const emailInput = adminPage.locator('input[placeholder="Email"]');
+    await emailInput.waitFor({ state: "visible", timeout: 5000 });
+    await emailInput.fill(TEST_USER_EMAIL);
+    // Wait for input change event and React validation before submitting
+    await adminPage.waitForTimeout(1000);
+
+    const inviteButton = adminPage.locator('button:has-text("Invite user to tenant")');
+    await inviteButton.waitFor({ state: "visible", timeout: 5000 });
+    await inviteButton.click();
+    await adminPage.waitForTimeout(5000);
+
+    // Wait up to 10s for the user to appear (server-side async operation)
     const userAdded = await adminPage
       .locator(`text=${TEST_USER_EMAIL}`)
-      .isVisible({ timeout: 5000 });
+      .isVisible({ timeout: 10000 });
     expect(userAdded).toBe(true);
     console.log("   ✓ Test user added as member\n");
 
-    console.log("6️⃣  Admin signing out...");
-    // Close modal
     await adminPage.locator('button:has-text("Close")').first().click();
     await adminPage.waitForTimeout(500);
 
-    // Sign out
-    await adminPage.goto(`${baseUrl}/api/auth/logout`);
-    await adminPage.waitForLoadState("networkidle");
-    console.log("   ✓ Admin signed out\n");
-
     // ============================================================
-    // STORY STEP 7-9: User verifies access
+    // STEP 2: User verifies tenant access
+    // Tenant membership is checked per-request — no re-login needed.
     // ============================================================
-    console.log("7️⃣  test-user@astromind.com signing in...");
-    await userPage.goto(baseUrl);
-    await userPage.waitForLoadState("networkidle");
-    expect(userPage.url()).not.toContain("auth0.com");
-    console.log("   ✓ Test user authenticated\n");
+    console.log("2️⃣  Verifying user has access to seismic tenant...");
 
-    console.log("8️⃣  Verifying user is part of seismic tenant...");
-    // User should NOT be stuck at /beta
+    await userPage.goto(`${baseUrl}/chats`, { waitUntil: "domcontentloaded" });
     await userPage.waitForTimeout(2000);
-    const userUrl = userPage.url();
-    expect(userUrl).not.toContain("/beta");
 
-    // Should be able to access chats or other tenant features
-    await userPage.goto(`${baseUrl}/chats`);
-    await userPage.waitForLoadState("networkidle");
+    expect(userPage.url()).not.toContain("/beta");
     expect(userPage.url()).toContain("/chats");
-    console.log("   ✓ User has access to seismic tenant (can access /chats)\n");
-
-    console.log("9️⃣  User signing out...");
-    await userPage.goto(`${baseUrl}/api/auth/logout`);
-    await userPage.waitForLoadState("networkidle");
-    console.log("   ✓ User signed out\n");
+    console.log("   ✓ User has access (can reach /chats)\n");
 
     // ============================================================
-    // STORY STEP 10-15: Admin removes user
+    // STEP 3: Admin removes test user from seismic tenant
     // ============================================================
-    console.log("🔟 Admin signing in again...");
-    await adminPage.goto(baseUrl);
-    await adminPage.waitForLoadState("networkidle");
-    console.log("   ✓ Admin authenticated\n");
+    console.log("3️⃣  Admin removing test user from seismic tenant...");
 
-    console.log("1️⃣1️⃣-1️⃣3️⃣  Admin navigating to tenant management...");
     await switchToAdminWorkspace(adminPage, baseUrl);
     await openSeismicTenantManagement(adminPage);
-    console.log("   ✓ Tenant management opened\n");
 
-    console.log("1️⃣4️⃣  Removing test-user@astromind.com as member...");
-
-    // Click remove button (trash icon) - verified selector
     await adminPage
       .locator(`button[aria-label="Remove ${TEST_USER_EMAIL}"]`)
       .click();
     await adminPage.waitForTimeout(2000);
 
-    // Verify user removed
     const userRemoved =
       (await adminPage.locator(`text=${TEST_USER_EMAIL}`).count()) === 0;
     expect(userRemoved).toBe(true);
     console.log("   ✓ Test user removed from tenant\n");
 
-    console.log("1️⃣5️⃣  Admin signing out...");
     await adminPage.locator('button:has-text("Close")').first().click();
     await adminPage.waitForTimeout(500);
 
-    await adminPage.goto(`${baseUrl}/api/auth/logout`);
-    await adminPage.waitForLoadState("networkidle");
-    console.log("   ✓ Admin signed out\n");
-
     // ============================================================
-    // STORY STEP 16-17: User verifies access revoked
+    // STEP 4: User verifies access is revoked
     // ============================================================
-    console.log("1️⃣6️⃣  test-user@astromind.com signing in...");
-    await userPage.goto(baseUrl);
-    await userPage.waitForLoadState("networkidle");
-    console.log("   ✓ Test user authenticated\n");
+    console.log("4️⃣  Verifying user access is revoked...");
 
-    console.log("1️⃣7️⃣  Verifying user is stuck at /beta screen...");
+    await userPage.goto(`${baseUrl}/chats`, { waitUntil: "domcontentloaded" });
     await userPage.waitForTimeout(2000);
-    const stuckUrl = userPage.url();
-    expect(stuckUrl).toContain("/beta");
+
+    expect(userPage.url()).toContain("/beta");
     console.log("   ✓ User stuck at /beta (access revoked)\n");
 
     // ============================================================
-    // TEARDOWN: Restore test user for other tests
+    // TEARDOWN: Restore test user so other tests continue to work
+    // Uses a fresh admin context from the saved session file since
+    // the active adminPage context may have navigated away.
     // ============================================================
     console.log("📋 TEARDOWN: Restoring test user to tenant...\n");
 
-    // Admin signs in and opens tenant management
-    await switchToAdminWorkspace(adminPage, baseUrl);
-    await openSeismicTenantManagement(adminPage);
+    const teardownAdminContext = await adminPage
+      .context()
+      .browser()!
+      .newContext({ storageState: ADMIN_AUTH });
+    const teardownPage = await teardownAdminContext.newPage();
 
-    // Add user back
-    await adminPage.locator('input[placeholder="Email"]').fill(TEST_USER_EMAIL);
-    await adminPage.locator('button:has-text("Invite user to tenant")').click();
-    await adminPage.waitForTimeout(2000);
+    try {
+      await switchToAdminWorkspace(teardownPage, baseUrl);
+      await openSeismicTenantManagement(teardownPage);
 
-    // Verify restored
-    const userRestored = await adminPage
-      .locator(`text=${TEST_USER_EMAIL}`)
-      .isVisible({ timeout: 5000 });
-    expect(userRestored).toBe(true);
-    console.log("   ✓ Test user restored to tenant for other tests\n");
+      await teardownPage
+        .locator('input[placeholder="Email"]')
+        .fill(TEST_USER_EMAIL);
+      await teardownPage
+        .locator('button:has-text("Invite user to tenant")')
+        .click();
+      await teardownPage.waitForTimeout(2000);
+
+      const userRestored = await teardownPage
+        .locator(`text=${TEST_USER_EMAIL}`)
+        .isVisible({ timeout: 5000 });
+      expect(userRestored).toBe(true);
+      console.log("   ✓ Test user restored to tenant\n");
+    } finally {
+      await teardownAdminContext.close();
+    }
 
     console.log("✅ COMPLETE: All steps verified successfully!");
   });

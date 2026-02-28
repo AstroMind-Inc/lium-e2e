@@ -1,0 +1,18 @@
+{
+  "name": "production",
+  "baseUrls": {
+    "web": "https://app.lium.ai",
+    "api": "VPN_REQUIRED",
+    "services": {}
+  },
+  "auth0": {
+    "domain": "dev-lium.us.auth0.com",
+    "clientId": "aCQsj6hwoErCtY7jho7GOLnQqzM94nv1",
+    "audience": "https://api.sandbox.lium.ai"
+  },
+  "timeouts": {
+    "api": 30000,
+    "pageLoad": 60000
+  },
+  "notes": "Production environment (https://app.lium.ai). Update auth0 values if prod uses a separate Auth0 tenant."
+}

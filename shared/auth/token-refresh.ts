@@ -98,10 +98,9 @@ async function checkTokenValidity(
 
     // Wait for any Auth0 redirect to complete (or timeout if no redirect)
     try {
-      await page.waitForURL(
-        (url) => !url.href.includes("auth0.com"),
-        { timeout: 5000 },
-      );
+      await page.waitForURL((url) => !url.href.includes("auth0.com"), {
+        timeout: 5000,
+      });
     } catch {
       // Timeout is OK - might mean we're already on the target page
     }
@@ -155,10 +154,9 @@ async function attemptRefresh(
 
     // Wait for any Auth0 redirect to complete
     try {
-      await page.waitForURL(
-        (url) => !url.href.includes("auth0.com"),
-        { timeout: 5000 },
-      );
+      await page.waitForURL((url) => !url.href.includes("auth0.com"), {
+        timeout: 5000,
+      });
     } catch {
       // Timeout is OK - might mean we're already on the target page
     }
@@ -171,10 +169,9 @@ async function attemptRefresh(
 
     // Wait for any Auth0 redirect to complete
     try {
-      await page.waitForURL(
-        (url) => !url.href.includes("auth0.com"),
-        { timeout: 5000 },
-      );
+      await page.waitForURL((url) => !url.href.includes("auth0.com"), {
+        timeout: 5000,
+      });
     } catch {
       // Timeout is OK
     }

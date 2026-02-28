@@ -18,9 +18,11 @@ import * as os from "os";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Check if saved auth exists
-const adminAuthPath = path.resolve(__dirname, "../playwright/.auth/admin.json");
-const hasAdminAuth = fs.existsSync(adminAuthPath);
+// Auth file paths — per-environment so sessions don't overwrite each other
+// when switching between local/dev/staging/production.
+const env = process.env.E2E_ENVIRONMENT || "local";
+const adminAuthPath = path.resolve(__dirname, `../playwright/.auth/admin-${env}.json`);
+const userAuthPath = path.resolve(__dirname, `../playwright/.auth/user-${env}.json`);
 
 // Inline JSONL Reporter to avoid module loading issues
 class JSONLReporter implements Reporter {
@@ -106,8 +108,8 @@ export default defineConfig({
     // Base URL for page.goto('/')
     baseURL: process.env.BASE_URL || "http://localhost:3000",
 
-    // Use saved admin auth by default if it exists
-    ...(hasAdminAuth && { storageState: adminAuthPath }),
+    // NOTE: No global storageState here — each project/fixture manages its own auth.
+    // Applying admin auth globally would break unauthenticated smoke tests.
 
     // Collect trace when retrying the failed test
     trace: "retain-on-failure",
@@ -121,34 +123,38 @@ export default defineConfig({
     // Default timeout for actions
     actionTimeout: 10000,
 
-    // Default navigation timeout
-    navigationTimeout: 30000,
+    // Default navigation timeout — 60s to handle slow responses under full-suite parallel load
+    navigationTimeout: 60000,
   },
 
   // Configure projects for major browsers
   projects: [
     // Regular tests (no saved auth)
+    // Ignore files handled exclusively by chromium-user / chromium-admin to avoid
+    // parallel execution conflicts (both projects using same user/admin session).
+    // Also ignore tenant-management — it runs in the chromium-tenant project (last, after all others).
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: [/.*user.*\.spec\.ts$/, /.*admin.*\.spec\.ts$/, /.*tenant-management.*/],
     },
 
-    // Admin tests (with saved admin auth)
+    // Admin tests (with saved admin auth — absolute path avoids CWD-relative issues)
     {
       name: "chromium-admin",
       use: {
         ...devices["Desktop Chrome"],
-        storageState: "./playwright/.auth/admin.json",
+        storageState: adminAuthPath,
       },
       testMatch: /.*admin.*.spec.ts/,
     },
 
-    // User tests (with saved user auth)
+    // User tests (with saved user auth — absolute path avoids CWD-relative issues)
     {
       name: "chromium-user",
       use: {
         ...devices["Desktop Chrome"],
-        storageState: "./playwright/.auth/user.json",
+        storageState: userAuthPath,
       },
       testMatch: /.*user.*.spec.ts/,
     },
@@ -156,11 +162,24 @@ export default defineConfig({
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
+      // Exclude tenant-management — it modifies shared server state and only runs in chromium-tenant
+      testIgnore: [/.*tenant-management.*/],
     },
 
     {
       name: "webkit",
       use: { ...devices["Desktop Safari"] },
+      // Exclude tenant-management — it modifies shared server state and only runs in chromium-tenant
+      testIgnore: [/.*tenant-management.*/],
+    },
+
+    // Tenant management — runs AFTER all other projects complete (via dependencies).
+    // This prevents the user-removal SETUP step from conflicting with parallel user tests.
+    {
+      name: "chromium-tenant",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /.*tenant-management.*\.spec\.ts$/,
+      dependencies: ["chromium", "chromium-admin", "chromium-user", "firefox", "webkit"],
     },
 
     // Mobile viewports

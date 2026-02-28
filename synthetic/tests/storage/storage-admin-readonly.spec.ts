@@ -60,10 +60,7 @@ test.describe("Storage - Admin (Read-Only)", () => {
     if (fileRows > 1) {
       // Get first file
       const firstFileRow = adminPage.locator("tr").nth(1);
-      const fileName = await firstFileRow
-        .locator("td")
-        .first()
-        .textContent();
+      const fileName = await firstFileRow.locator("td").first().textContent();
       console.log(`   📄 File: ${fileName}\n`);
 
       // Try to preview file
@@ -101,13 +98,15 @@ test.describe("Storage - Admin (Read-Only)", () => {
     console.log("\n5️⃣  Testing folder navigation...");
 
     // Look for folders in the file list
-    const folderLinks = await adminPage.locator('tr td:first-child a, tr td:first-child button').all();
+    const folderLinks = await adminPage
+      .locator("tr td:first-child a, tr td:first-child button")
+      .all();
     let foundFolder = false;
 
     for (const link of folderLinks) {
       const text = await link.textContent();
       // Skip if it's a file (has extension)
-      if (text && !text.includes('.')) {
+      if (text && !text.includes(".")) {
         console.log(`   📁 Opening folder: ${text}`);
         await link.click();
         await adminPage.waitForTimeout(2000);

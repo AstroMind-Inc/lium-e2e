@@ -18,16 +18,22 @@ help:
 	@echo "  make configure      - Configure Auth0 from lium-web/.env.local"
 	@echo "  make install        - Install/update dependencies only"
 	@echo ""
-	@echo "Authentication:"
-	@echo "  make auth-setup-admin - Login as @astromind.com admin (saves session)"
-	@echo "  make auth-setup-user  - Login as regular user (saves session)"
-	@echo "  make auth-setup-all   - Setup both admin and user sessions"
-	@echo "  make auth-status      - Check which auth sessions are saved"
-	@echo "  make auth-clear       - Clear all saved auth sessions"
+	@echo "Authentication:  (all accept env=<environment>, default: local)"
+	@echo "  make auth-setup-admin            - Login as admin (opens browser, Google OAuth works)"
+	@echo "  make auth-setup-user             - Login as regular user"
+	@echo "  make auth-setup-all              - Setup both admin and user sessions"
+	@echo "  make auth-setup-all env=staging  - Setup sessions for a specific environment"
+	@echo "  make auth-status                 - Check which auth sessions are saved"
+	@echo "  make auth-clear                  - Clear all saved auth sessions"
 	@echo ""
-	@echo "JWT Credentials (for fast, headless tests):"
-	@echo "  make creds-setup      - Save credentials for JWT token authentication"
+	@echo "Headless Credentials (email+password for CI / auto-refresh):"
+	@echo "  make creds-setup      - Save credentials locally (gitignored)"
 	@echo "  make creds-status     - Check which credentials are saved"
+	@echo ""
+	@echo "  CI: set ENV vars instead of credentials file:"
+	@echo "    E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD"
+	@echo "    E2E_USER_EMAIL  / E2E_USER_PASSWORD"
+	@echo "  Sessions auto-refresh on each run when credentials are present."
 	@echo ""
 	@echo "Quality Checks:"
 	@echo "  make preflight      - Run all quality checks (format, lint, test, coverage)"
@@ -45,9 +51,10 @@ help:
 	@echo "  Default: local (http://lium-web:3000 - Docker)"
 	@echo ""
 	@echo "  Pass env= to use a different environment:"
-	@echo "    make test-syn-all env=dev       - Run against dev"
-	@echo "    make test-syn-all env=sandbox   - Run against sandbox"
-	@echo "    make test-syn-all env=staging   - Run against staging"
+	@echo "    make test-syn-all env=dev         - Run against dev"
+	@echo "    make test-syn-all env=sandbox     - Run against sandbox"
+	@echo "    make test-syn-all env=staging     - Run against staging"
+	@echo "    make test-syn-all env=production  - Run against https://app.lium.ai"
 	@echo ""
 	@echo "  Works with ALL test commands (test-syn-*, test-api-*, test-perf-*)"
 	@echo "  Example: make test-syn-auth env=dev"
@@ -135,21 +142,28 @@ install:
 	@npm install
 	@npx playwright install
 
-# Check if auth is set up, prompt if not
+# Check if auth is set up. Prompts only when there are no sessions AND no credentials.
+# If credentials exist, global-setup will auto-refresh headlessly — no prompt needed.
 .check-auth:
-	@if [ ! -f "playwright/.auth/admin.json" ] && [ ! -f "playwright/.auth/user.json" ]; then \
-		echo ""; \
-		echo "⚠️  No authentication sessions found."; \
-		echo ""; \
-		echo "For faster, headless tests, you should authenticate once:"; \
-		echo "  • make auth-setup-admin  - Login as @astromind.com admin"; \
-		echo "  • make auth-setup-user   - Login as regular user"; \
-		echo ""; \
-		read -p "Setup admin authentication now? (Y/n): " answer; \
-		if [ -z "$$answer" ] || [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
-			$(MAKE) auth-setup-admin; \
+	@if [ ! -f "playwright/.auth/admin-$(env).json" ] && [ ! -f "playwright/.auth/user-$(env).json" ]; then \
+		if [ -f "credentials/$(env).json" ]; then \
+			echo ""; \
+			echo "ℹ️  No sessions for '$(env)' — credentials found, will auto-login headlessly."; \
+			echo ""; \
+		else \
+			echo ""; \
+			echo "⚠️  No auth sessions or credentials found for '$(env)'."; \
+			echo ""; \
+			echo "Options:"; \
+			echo "  make auth-setup-all              - Login via browser (Google OAuth works)"; \
+			echo "  make creds-setup                 - Save email/password for headless auth"; \
+			echo ""; \
+			read -p "Open browser to set up auth now? (Y/n): " answer; \
+			if [ -z "$$answer" ] || [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+				$(MAKE) auth-setup-admin; \
+			fi; \
+			echo ""; \
 		fi; \
-		echo ""; \
 	fi
 
 # Interactive test runner
@@ -211,7 +225,10 @@ test-syn-%: .check-auth
 		echo "❌ Module 'synthetic/tests/$$MODULE_NAME' not found"; \
 		echo ""; \
 		echo "Available modules:"; \
-		find synthetic/tests/ -maxdepth 1 -type d ! -name "tests" ! -name "_*" -exec basename {} \; | sort | sed 's/^/  - test-syn-/'; \
+		find synthetic/tests/ -maxdepth 1 -type d ! -name "tests" ! -name "_*" -exec basename {} \; | sort | while read mod; do \
+			cnt=$$(grep -r "^\s*test(" "synthetic/tests/$$mod" --include="*.spec.ts" 2>/dev/null | wc -l | tr -d ' '); \
+			printf "  - test-syn-%-30s (%s tests)\n" "$$mod" "$$cnt"; \
+		done; \
 		exit 1; \
 	fi
 
@@ -291,13 +308,13 @@ test-framework:
 
 # Authentication Setup
 auth-setup-admin:
-	@echo "🔐 Setting up Admin Authentication..."
+	@echo "🔐 Setting up Admin Authentication (env=$(env))..."
 	@mkdir -p playwright/.auth
 	@npx playwright test --config=synthetic/playwright.auth-admin.config.ts || true
-	@if [ -f "playwright/.auth/admin.json" ]; then \
+	@if [ -f "playwright/.auth/admin-$(env).json" ]; then \
 		echo ""; \
 		echo "✅ Admin authentication complete!"; \
-		echo "   Session saved. All tests will now run HEADLESS."; \
+		echo "   Session saved: playwright/.auth/admin-$(env).json"; \
 	else \
 		echo ""; \
 		echo "❌ Authentication setup failed - no session saved."; \
@@ -305,13 +322,13 @@ auth-setup-admin:
 	fi
 
 auth-setup-user:
-	@echo "👤 Setting up Regular User Authentication..."
+	@echo "👤 Setting up Regular User Authentication (env=$(env))..."
 	@mkdir -p playwright/.auth
 	@npx playwright test --config=synthetic/playwright.auth-user.config.ts || true
-	@if [ -f "playwright/.auth/user.json" ]; then \
+	@if [ -f "playwright/.auth/user-$(env).json" ]; then \
 		echo ""; \
 		echo "✅ User authentication complete!"; \
-		echo "   Session saved. All tests will now run HEADLESS."; \
+		echo "   Session saved: playwright/.auth/user-$(env).json"; \
 	else \
 		echo ""; \
 		echo "❌ Authentication setup failed - no session saved."; \
@@ -324,43 +341,56 @@ auth-setup-all: auth-setup-admin auth-setup-user
 	@echo "   Tests will now run HEADLESS for maximum speed."
 
 auth-status:
-	@echo "🔍 Authentication Status"
+	@echo "🔍 Browser Session Status"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@if [ -f "playwright/.auth/admin.json" ]; then \
-		echo "✅ Admin session: SAVED"; \
-		stat -f "   Last updated: %Sm" playwright/.auth/admin.json 2>/dev/null || stat -c "   Last updated: %y" playwright/.auth/admin.json; \
-	else \
-		echo "❌ Admin session: NOT FOUND (run: make auth-setup-admin)"; \
-	fi
-	@if [ -f "playwright/.auth/user.json" ]; then \
-		echo "✅ User session: SAVED"; \
-		stat -f "   Last updated: %Sm" playwright/.auth/user.json 2>/dev/null || stat -c "   Last updated: %y" playwright/.auth/user.json; \
-	else \
-		echo "❌ User session: NOT FOUND (run: make auth-setup-user)"; \
-	fi
+	@for e in local dev sandbox staging production; do \
+		echo ""; \
+		echo "  $$e:"; \
+		if [ -f "playwright/.auth/admin-$$e.json" ]; then \
+			echo "    ✅ admin: SAVED"; \
+			stat -f "       Last updated: %Sm" "playwright/.auth/admin-$$e.json" 2>/dev/null || stat -c "       Last updated: %y" "playwright/.auth/admin-$$e.json"; \
+		else \
+			echo "    ❌ admin: NOT FOUND"; \
+		fi; \
+		if [ -f "playwright/.auth/user-$$e.json" ]; then \
+			echo "    ✅ user:  SAVED"; \
+			stat -f "       Last updated: %Sm" "playwright/.auth/user-$$e.json" 2>/dev/null || stat -c "       Last updated: %y" "playwright/.auth/user-$$e.json"; \
+		else \
+			echo "    ❌ user:  NOT FOUND"; \
+		fi; \
+	done
+	@echo ""
+	@echo "  Run: make auth-setup-all [env=<env>]  to set up sessions"
 
 auth-clear:
-	@echo "🗑️  Clearing all authentication sessions..."
-	@rm -f playwright/.auth/admin.json
-	@rm -f playwright/.auth/user.json
-	@echo "✅ All auth sessions cleared. Run auth-setup commands to re-authenticate."
+	@echo "🗑️  Clearing auth sessions for env=$(env)..."
+	@rm -f "playwright/.auth/admin-$(env).json"
+	@rm -f "playwright/.auth/user-$(env).json"
+	@echo "✅ Auth sessions cleared for $(env). Run auth-setup commands to re-authenticate."
+	@echo "   Tip: make auth-clear env=staging  — clear a different environment"
 
-# JWT Credential Setup (for JWT token injection)
+# Headless Credential Setup (email+password for CI / auto-refresh)
+# Pass env= to pre-select the environment: make creds-setup env=staging
 creds-setup:
-	@echo "🔐 Setting up JWT credentials..."
+	@echo "🔐 Setting up credentials for headless auth..."
 	@npx tsx scripts/setup-credentials.ts
 
 creds-status:
-	@echo "🔍 JWT Credential Status"
+	@echo "🔍 Email/Password Credential Status"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@for env in local dev sandbox staging; do \
-		if [ -f "credentials/$$env.json" ]; then \
-			echo "✅ $$env: SAVED"; \
-			stat -f "   Last updated: %Sm" credentials/$$env.json 2>/dev/null || stat -c "   Last updated: %y" credentials/$$env.json; \
+	@for e in local dev sandbox staging production; do \
+		echo ""; \
+		echo "  $$e:"; \
+		if [ -f "credentials/$$e.json" ]; then \
+			node -e 'var e=process.argv[1],c=JSON.parse(require("fs").readFileSync("credentials/"+e+".json","utf8")),a=c.elevated||c.admin,u=c.regular||c.user;console.log(a&&a.username?"    \u2705 admin: "+a.username:"    \u274c admin: NOT SET");console.log(u&&u.username?"    \u2705 user:  "+u.username:"    \u274c user:  NOT SET")' $$e; \
 		else \
-			echo "❌ $$env: NOT SAVED"; \
+			echo "    ❌ admin: NOT SET"; \
+			echo "    ❌ user:  NOT SET"; \
 		fi; \
 	done
+	@echo ""
+	@echo "  Files: credentials/<env>.json  (gitignored, chmod 600)"
+	@echo "  Run:   make creds-setup [env=<env>]  to save credentials"
 
 # Configure Auth0 from lium-web
 configure:

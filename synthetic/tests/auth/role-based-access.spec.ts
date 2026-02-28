@@ -1,10 +1,12 @@
 /**
- * Role-Based Access Control Tests (JWT Token Injection)
- * Comprehensive tests for admin vs user permissions
- * Fast, reliable, headless - no Auth0 OAuth flow
+ * Role-Based Access Control Tests
+ * Comprehensive tests for admin vs user permissions using saved browser sessions.
  */
 
 import { test, expect } from "../../fixtures/index.js";
+
+// OS-aware keyboard shortcut
+const cmdK = process.platform === "darwin" ? "Meta+k" : "Control+k";
 
 test.describe("Admin Access", () => {
   test("admin can access /admin page", async ({ adminPage, envConfig }) => {
@@ -17,7 +19,7 @@ test.describe("Admin Access", () => {
     expect(adminPage.url()).not.toContain("auth0.com");
     expect(adminPage.url()).not.toContain("/login");
 
-    console.log("✅ Admin accessed /admin via JWT");
+    console.log("✅ Admin accessed /admin");
   });
 
   test("admin can access dashboard", async ({ adminPage, envConfig }) => {
@@ -32,7 +34,7 @@ test.describe("Admin Access", () => {
     expect(url.includes("/chats") || url.includes("/chat")).toBe(true);
     expect(url).not.toContain("auth0.com");
 
-    console.log("✅ Admin accessed dashboard via JWT");
+    console.log("✅ Admin accessed dashboard");
   });
 
   test("admin can search for admin in CMD-K", async ({
@@ -43,15 +45,28 @@ test.describe("Admin Access", () => {
 
     await adminPage.goto(envConfig.baseUrls.web);
     await adminPage.waitForLoadState("networkidle");
-    await adminPage.keyboard.press("Meta+k");
-    await adminPage.waitForTimeout(1000);
+    await adminPage.keyboard.press(cmdK);
+
+    // Wait for command palette to open
+    const palette = adminPage
+      .locator('[role="dialog"], [data-testid="command-palette"]')
+      .first();
+    await palette.waitFor({ state: "visible", timeout: 5000 });
+
     await adminPage.keyboard.type("admin");
-    await adminPage.waitForTimeout(1500);
+    await adminPage.waitForTimeout(1000);
 
+    // Check for admin-specific results inside the palette
     const hasAdminResults =
-      (await adminPage.locator("text=/admin/i").count()) > 0;
-    expect(hasAdminResults).toBe(true);
+      (await palette.locator('a[href*="/admin"]').count()) > 0 ||
+      (await palette.locator('[data-testid*="admin"]').count()) > 0 ||
+      (await adminPage
+        .locator(
+          '[role="option"]:has-text("Admin"), [role="listitem"]:has-text("Admin")',
+        )
+        .count()) > 0;
 
+    expect(hasAdminResults).toBe(true);
     console.log("✅ Admin can search for admin features");
   });
 });
@@ -69,7 +84,7 @@ test.describe("Regular User Access", () => {
     expect(url.includes("/chats") || url.includes("/chat")).toBe(true);
     expect(url).not.toContain("auth0.com");
 
-    console.log("✅ User accessed dashboard via JWT");
+    console.log("✅ User accessed dashboard");
   });
 
   test("user CANNOT access /admin page", async ({ userPage, envConfig }) => {
@@ -93,16 +108,25 @@ test.describe("Regular User Access", () => {
 
     await userPage.goto(envConfig.baseUrls.web);
     await userPage.waitForLoadState("networkidle");
-    await userPage.keyboard.press("Meta+k");
-    await userPage.waitForTimeout(500);
+    await userPage.keyboard.press(cmdK);
+
+    // Wait for command palette to open
+    const palette = userPage
+      .locator('[role="dialog"], [data-testid="command-palette"]')
+      .first();
+    await palette.waitFor({ state: "visible", timeout: 5000 });
+
     await userPage.keyboard.type("admin");
     await userPage.waitForTimeout(1000);
 
-    const hasAdminResults =
-      (await userPage.locator("text=/admin/i").count()) > 0;
-    expect(hasAdminResults).toBe(false);
+    // Check ONLY inside the palette for admin-specific navigation items (not page text)
+    const hasAdminNavResults =
+      (await palette.locator('a[href*="/admin"]').count()) > 0 ||
+      (await palette.locator('[data-testid*="admin"]').count()) > 0;
 
-    console.log("✅ User cannot search for admin features");
+    expect(hasAdminNavResults).toBe(false);
+
+    console.log("✅ User cannot navigate to admin features via CMD-K");
   });
 });
 
@@ -117,11 +141,9 @@ test.describe("Unauthenticated Access", () => {
     // Clear all cookies to ensure truly unauthenticated
     await context.clearCookies();
 
-    // Try to access admin page without auth
     await page.goto(`${envConfig.baseUrls.web}/admin`);
     await page.waitForLoadState("networkidle");
 
-    // Should be redirected to login
     const url = page.url();
     const isRedirectedToAuth =
       url.includes("auth0.com") ||
@@ -129,7 +151,6 @@ test.describe("Unauthenticated Access", () => {
       url.includes("/api/auth/signin");
 
     expect(isRedirectedToAuth).toBe(true);
-
     console.log("✅ Unauthenticated access properly blocked");
   });
 });
@@ -142,7 +163,6 @@ test.describe("Common Features", () => {
   }) => {
     console.log("🔄 Testing common features for both roles...");
 
-    // Navigate both pages sequentially (more reliable than parallel)
     await adminPage.goto(`${envConfig.baseUrls.web}/chats`, {
       waitUntil: "domcontentloaded",
     });
@@ -150,15 +170,11 @@ test.describe("Common Features", () => {
       waitUntil: "domcontentloaded",
     });
 
-    // Wait a bit for any redirects to complete
-    await adminPage.waitForTimeout(2000);
-    await userPage.waitForTimeout(2000);
+    await adminPage.waitForTimeout(1000);
+    await userPage.waitForTimeout(1000);
 
     const adminUrl = adminPage.url();
     const userUrl = userPage.url();
-
-    console.log(`Admin URL: ${adminUrl}`);
-    console.log(`User URL: ${userUrl}`);
 
     expect(adminUrl.includes("/chats") || adminUrl.includes("/chat")).toBe(
       true,

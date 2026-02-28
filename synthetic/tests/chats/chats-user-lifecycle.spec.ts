@@ -8,26 +8,60 @@
 import { test, expect } from "../../fixtures/index.js";
 
 test.describe("Chats - User (Full Access)", () => {
+  test.setTimeout(60000); // explicit — guards against global config changes
+
   test("[USER] can create, message, rename, and delete chat", async ({
     userPage,
     envConfig,
   }) => {
     console.log("💬 Starting user chat lifecycle test\n");
 
-    // Navigate to home/dashboard
-    console.log("1️⃣  Navigating to home...");
-    await userPage.goto(`${envConfig.baseUrls.web}`, {
+    // Navigate to /chats directly — more reliable than home which may redirect
+    console.log("1️⃣  Navigating to chats...");
+    await userPage.goto(`${envConfig.baseUrls.web}/chats`, {
       waitUntil: "domcontentloaded",
     });
-    await userPage.waitForTimeout(2000);
-    console.log("✅ On home page\n");
+    await userPage.waitForTimeout(1500);
+
+    // Verify user is authenticated (not redirected to Auth0)
+    const currentUrl = userPage.url();
+    if (currentUrl.includes("auth0.com")) {
+      throw new Error(
+        `User is not authenticated — redirected to Auth0: ${currentUrl}`,
+      );
+    }
+    expect(currentUrl).toContain("/chats");
+    console.log("✅ On chats page\n");
 
     // Create a new chat - click "New chat" button/link
     console.log("2️⃣  Creating new chat...");
 
-    // Look for "New Chat" or "New chat" button/link
-    const newChatButton = userPage.locator('button:has-text("New Chat"), button:has-text("New chat"), a:has-text("New Chat"), a:has-text("New chat")').first();
-    await newChatButton.waitFor({ state: 'visible', timeout: 10000 });
+    // Broad selector — catches different casings and element types
+    const newChatButton = userPage
+      .locator(
+        [
+          'button:has-text("New Chat")',
+          'button:has-text("New chat")',
+          'a:has-text("New Chat")',
+          'a:has-text("New chat")',
+          '[aria-label*="New chat" i]',
+          '[aria-label*="New Chat" i]',
+        ].join(", "),
+      )
+      .first();
+
+    const found = await newChatButton
+      .waitFor({ state: "visible", timeout: 15000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!found) {
+      await userPage.screenshot({ path: "test-results/new-chat-button-missing.png" });
+      throw new Error(
+        `"New Chat" button not found after 15s. Screenshot saved. URL: ${userPage.url()}`,
+      );
+    }
+
     await newChatButton.click();
     await userPage.waitForTimeout(2000);
     console.log("   Clicked New Chat button\n");
@@ -36,7 +70,11 @@ test.describe("Chats - User (Full Access)", () => {
     console.log("\n3️⃣  Selecting agent: Lium Analysis Agent");
 
     // Look for agent selector/dropdown
-    const agentSelector = userPage.locator('select, [role="combobox"], button:has-text("Select"), button:has-text("Agent")').first();
+    const agentSelector = userPage
+      .locator(
+        'select, [role="combobox"], button:has-text("Select"), button:has-text("Agent")',
+      )
+      .first();
     const agentSelectorCount = await agentSelector.count();
 
     if (agentSelectorCount > 0) {
@@ -45,7 +83,9 @@ test.describe("Chats - User (Full Access)", () => {
       await userPage.waitForTimeout(1000);
 
       // Look for "Lium Analysis Agent" in dropdown
-      const agentOption = userPage.locator('text="Lium Analysis Agent"').first();
+      const agentOption = userPage
+        .locator('text="Lium Analysis Agent"')
+        .first();
       const agentOptionCount = await agentOption.count();
 
       if (agentOptionCount > 0) {
@@ -55,7 +95,9 @@ test.describe("Chats - User (Full Access)", () => {
       } else {
         console.log("⚠️  Lium Analysis Agent not found in list");
         // Take screenshot to see available agents
-        await userPage.screenshot({ path: "test-results/agent-selector-debug.png" });
+        await userPage.screenshot({
+          path: "test-results/agent-selector-debug.png",
+        });
       }
     } else {
       console.log("⚠️  Agent selector not found, may be auto-selected");
@@ -65,12 +107,16 @@ test.describe("Chats - User (Full Access)", () => {
     console.log("\n4️⃣  Sending message: Hello");
 
     // Find message input (textarea or input) - try multiple selectors
-    let messageInput = userPage.locator('textarea').first();
+    let messageInput = userPage.locator("textarea").first();
     let inputCount = await messageInput.count();
 
     if (inputCount === 0) {
       // Try with placeholder
-      messageInput = userPage.locator('textarea[placeholder*="message"], textarea[placeholder*="Message"], input[placeholder*="message"], input[placeholder*="Message"]').first();
+      messageInput = userPage
+        .locator(
+          'textarea[placeholder*="message"], textarea[placeholder*="Message"], input[placeholder*="message"], input[placeholder*="Message"]',
+        )
+        .first();
       inputCount = await messageInput.count();
     }
 
@@ -81,12 +127,16 @@ test.describe("Chats - User (Full Access)", () => {
     }
 
     if (inputCount > 0) {
-      await messageInput.waitFor({ state: 'visible', timeout: 10000 });
+      await messageInput.waitFor({ state: "visible", timeout: 10000 });
       await messageInput.fill("Hello");
       console.log("   Typed message");
 
       // Find and click send button
-      const sendButton = userPage.locator('button[type="submit"], button:has-text("Send"), button[aria-label*="Send"], button[aria-label*="send"]').first();
+      const sendButton = userPage
+        .locator(
+          'button[type="submit"], button:has-text("Send"), button[aria-label*="Send"], button[aria-label*="send"]',
+        )
+        .first();
       const sendButtonCount = await sendButton.count();
 
       if (sendButtonCount > 0) {
@@ -96,7 +146,7 @@ test.describe("Chats - User (Full Access)", () => {
         console.log("✅ Message sent\n");
       } else {
         // Try pressing Enter
-        await messageInput.press('Enter');
+        await messageInput.press("Enter");
         await userPage.waitForTimeout(3000);
         console.log("✅ Message sent (Enter)\n");
       }
@@ -113,7 +163,9 @@ test.describe("Chats - User (Full Access)", () => {
     console.log("5️⃣  Navigating to chats list...");
 
     // Click on "Chats" in sidebar
-    const chatsLink = userPage.locator('a:has-text("Chats"), nav a:has-text("Chats")').first();
+    const chatsLink = userPage
+      .locator('a:has-text("Chats"), nav a:has-text("Chats")')
+      .first();
     const chatsLinkCount = await chatsLink.count();
 
     if (chatsLinkCount > 0) {
@@ -153,10 +205,12 @@ test.describe("Chats - User (Full Access)", () => {
     // Change the title of the chat
     console.log("7️⃣  Changing chat title...");
 
-    const newTitle = `Test Chat - ${new Date().toISOString().split('T')[0]}`;
+    const newTitle = `Test Chat - ${new Date().toISOString().split("T")[0]}`;
 
     // Look for title edit button/field (could be an edit icon, settings, or direct click)
-    const titleElement = userPage.locator('h1, [class*="title"], [role="heading"]').first();
+    const titleElement = userPage
+      .locator('h1, [class*="title"], [role="heading"]')
+      .first();
     const titleCount = await titleElement.count();
 
     if (titleCount > 0) {
@@ -168,7 +222,11 @@ test.describe("Chats - User (Full Access)", () => {
       await userPage.waitForTimeout(500);
 
       // Look for edit icon, pencil button, or settings
-      const editButton = userPage.locator('button[aria-label*="edit"], button[aria-label*="Edit"], button:has-text("✏️"), svg[data-icon="pencil"]').first();
+      const editButton = userPage
+        .locator(
+          'button[aria-label*="edit"], button[aria-label*="Edit"], button:has-text("✏️"), svg[data-icon="pencil"]',
+        )
+        .first();
       const editButtonCount = await editButton.count();
 
       if (editButtonCount > 0) {
@@ -177,8 +235,12 @@ test.describe("Chats - User (Full Access)", () => {
         await userPage.waitForTimeout(1000);
       }
 
-      // Look for title input field
-      const titleInput = userPage.locator('input[value*=""], input[type="text"]').first();
+      // Look for title input field — scoped to avoid matching unrelated inputs
+      const titleInput = userPage
+        .locator(
+          'h1 input, [class*="title"] input, input[aria-label*="title" i], input[aria-label*="name" i], input[placeholder*="title" i], input[placeholder*="name" i]',
+        )
+        .first();
       const titleInputCount = await titleInput.count();
 
       if (titleInputCount > 0) {
@@ -186,7 +248,11 @@ test.describe("Chats - User (Full Access)", () => {
         await titleInput.fill(newTitle);
 
         // Look for save/confirm button
-        const saveButton = userPage.locator('button:has-text("Save"), button:has-text("✓"), button[type="submit"]').first();
+        const saveButton = userPage
+          .locator(
+            'button:has-text("Save"), button:has-text("✓"), button[type="submit"]',
+          )
+          .first();
         const saveButtonCount = await saveButton.count();
 
         if (saveButtonCount > 0) {
@@ -195,21 +261,30 @@ test.describe("Chats - User (Full Access)", () => {
           console.log(`✅ Changed title to: "${newTitle}"\n`);
         } else {
           // Try pressing Enter
-          await titleInput.press('Enter');
+          await titleInput.press("Enter");
           await userPage.waitForTimeout(2000);
           console.log(`✅ Changed title to: "${newTitle}" (Enter)\n`);
         }
 
         // Verify title changed (try to read, but don't fail if element changed)
         try {
-          const updatedTitle = await titleElement.textContent({ timeout: 3000 });
-          if (updatedTitle?.includes(newTitle) || updatedTitle?.includes("Test Chat")) {
+          const updatedTitle = await titleElement.textContent({
+            timeout: 3000,
+          });
+          if (
+            updatedTitle?.includes(newTitle) ||
+            updatedTitle?.includes("Test Chat")
+          ) {
             console.log("✅ Title change confirmed\n");
           } else {
-            console.log(`⚠️  Title may not have changed: "${updatedTitle?.trim()}"\n`);
+            console.log(
+              `⚠️  Title may not have changed: "${updatedTitle?.trim()}"\n`,
+            );
           }
         } catch (e) {
-          console.log("ℹ️  Could not verify title (element may have changed)\n");
+          console.log(
+            "ℹ️  Could not verify title (element may have changed)\n",
+          );
         }
       } else {
         console.log("⚠️  Could not find title input field\n");
@@ -223,7 +298,11 @@ test.describe("Chats - User (Full Access)", () => {
 
     // Look for delete button (could be in menu, settings, or direct button)
     // Try menu/actions button first
-    const menuButton = userPage.locator('button[aria-label*="menu"], button[aria-label*="Menu"], button[aria-label*="options"], button[aria-label*="Options"], button:has-text("⋮"), button:has-text("...")').first();
+    const menuButton = userPage
+      .locator(
+        'button[aria-label*="menu"], button[aria-label*="Menu"], button[aria-label*="options"], button[aria-label*="Options"], button:has-text("⋮"), button:has-text("...")',
+      )
+      .first();
     const menuButtonCount = await menuButton.count();
 
     if (menuButtonCount > 0) {
@@ -232,7 +311,11 @@ test.describe("Chats - User (Full Access)", () => {
       await userPage.waitForTimeout(1000);
 
       // Look for delete option in menu
-      const deleteOption = userPage.locator('[role="menuitem"]:has-text("Delete"), button:has-text("Delete")').first();
+      const deleteOption = userPage
+        .locator(
+          '[role="menuitem"]:has-text("Delete"), button:has-text("Delete")',
+        )
+        .first();
       const deleteOptionCount = await deleteOption.count();
 
       if (deleteOptionCount > 0) {
@@ -241,7 +324,9 @@ test.describe("Chats - User (Full Access)", () => {
         console.log("   Clicked Delete option");
 
         // Handle confirmation dialog if present
-        const confirmButton = userPage.locator('button:has-text("Delete"), button:has-text("Confirm")').first();
+        const confirmButton = userPage
+          .locator('button:has-text("Delete"), button:has-text("Confirm")')
+          .first();
         const confirmButtonCount = await confirmButton.count();
 
         if (confirmButtonCount > 0) {
@@ -256,7 +341,11 @@ test.describe("Chats - User (Full Access)", () => {
       }
     } else {
       // Try direct delete button
-      const deleteButton = userPage.locator('button:has-text("Delete"), button[aria-label*="delete"], button[aria-label*="Delete"]').first();
+      const deleteButton = userPage
+        .locator(
+          'button:has-text("Delete"), button[aria-label*="delete"], button[aria-label*="Delete"]',
+        )
+        .first();
       const deleteButtonCount = await deleteButton.count();
 
       if (deleteButtonCount > 0) {
@@ -265,7 +354,9 @@ test.describe("Chats - User (Full Access)", () => {
         await userPage.waitForTimeout(1000);
 
         // Handle confirmation
-        const confirmButton = userPage.locator('button:has-text("Delete"), button:has-text("Confirm")').first();
+        const confirmButton = userPage
+          .locator('button:has-text("Delete"), button:has-text("Confirm")')
+          .first();
         const confirmButtonCount = await confirmButton.count();
 
         if (confirmButtonCount > 0) {

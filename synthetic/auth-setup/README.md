@@ -21,6 +21,7 @@ make auth-setup-all
 ```
 
 **Credentials**: Check **1Password > Test Accounts**
+
 - **Admin**: Use your @astromind.com account (via Google OAuth)
 - **User**: `test-user@astromind.com` (password in 1Password)
 

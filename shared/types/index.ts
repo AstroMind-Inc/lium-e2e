@@ -86,5 +86,10 @@ export interface TrendData {
   totalTests: number;
 }
 
-export type Environment = "local" | "dev" | "sandbox" | "staging";
+export type Environment =
+  | "local"
+  | "dev"
+  | "sandbox"
+  | "staging"
+  | "production";
 export type Pillar = "synthetic" | "integration" | "performance";

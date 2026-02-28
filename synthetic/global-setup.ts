@@ -3,36 +3,34 @@
  *
  * Pre-flight checks:
  * 1. Verify host is reachable (fail fast if app is down)
- * 2. Check and auto-refresh authentication tokens
+ * 2. Check auth sessions — auto-refresh if expired and credentials available
  */
 
 import { type FullConfig } from "@playwright/test";
 import * as path from "path";
 import * as fs from "fs";
 import { fileURLToPath } from "url";
-import { refreshAuthIfNeeded } from "../shared/auth/token-refresh.js";
+import { ensureSession } from "../shared/auth/headless-login.js";
 import { envSelector } from "../shared/environment/env-selector.js";
+import type { Environment } from "../shared/types/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function globalSetup(config: FullConfig) {
-  // Get base URL from environment config (same as tests use)
-  // This ensures token checks use the same URL as actual tests
-  const environment = (process.env.E2E_ENVIRONMENT as any) || "local";
+async function globalSetup(_config: FullConfig) {
+  const environment = (process.env.E2E_ENVIRONMENT as Environment) || "local";
   const envConfig = await envSelector.loadEnvironment(environment);
   const baseUrl = envConfig.baseUrls.web;
 
-  // Health check - verify host is reachable before running tests
-  console.log(`\n🏥 Checking if host is reachable: ${baseUrl}\n`);
+  // ─── Health Check ──────────────────────────────────────────────────────────
+  console.log(`\n🏥 Health check: ${baseUrl}\n`);
   try {
     const response = await fetch(baseUrl, {
       method: "GET",
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok && response.status !== 401 && response.status !== 403) {
-      // Allow 401/403 since app might require auth, but other errors are problems
       console.error(`❌ Host returned error status: ${response.status}`);
       console.error(`   URL: ${baseUrl}`);
       console.error(
@@ -43,58 +41,48 @@ async function globalSetup(config: FullConfig) {
 
     console.log(`✅ Host is reachable (status: ${response.status})\n`);
   } catch (error: any) {
+    const isDockerUrl = baseUrl.includes("lium-web") || baseUrl.startsWith("http://");
+    const isCloudUrl = baseUrl.startsWith("https://");
+
     console.error(`❌ Cannot reach host: ${baseUrl}`);
     console.error(`   Error: ${error.message}`);
-    console.error(`\n💡 Make sure the app is running before running tests.\n`);
-    console.error(`   If using Docker: docker compose up -d`);
-    console.error(`   If running locally: npm run dev\n`);
+    if (isDockerUrl) {
+      console.error(`\n💡 The app does not appear to be running.`);
+      console.error(`   Start it with: docker compose up -d`);
+      console.error(`   Or from the lium repo: cd ../lium && docker compose up -d\n`);
+    } else if (isCloudUrl) {
+      console.error(`\n💡 Cannot reach ${baseUrl}.`);
+      console.error(`   Check your network connection and try again.\n`);
+    } else {
+      console.error(`\n💡 Make sure the app is running at: ${baseUrl}\n`);
+    }
     process.exit(1);
   }
 
-  console.log("🔐 Checking and renewing authentication sessions...\n");
+  // ─── Auth Sessions ─────────────────────────────────────────────────────────
+  console.log("🔐 Checking authentication sessions...\n");
 
-  const authDir = path.join(__dirname, "../playwright/.auth");
-  const adminAuthFile = path.join(authDir, "admin.json");
-  const userAuthFile = path.join(authDir, "user.json");
+  // Always call ensureSession for both roles.
+  // ensureSession handles all cases:
+  //   1. Valid session file        → use it (fast path)
+  //   2. Expired/missing + creds   → headless login (credentials file or ENV vars)
+  //   3. No creds + local          → interactive browser (Google OAuth works)
+  //   4. No creds + CI             → error
+  let anyValid = false;
 
-  let hasValidAuth = false;
+  console.log("🔑 Admin session:");
+  const adminOk = await ensureSession("admin", baseUrl, environment);
+  if (adminOk) anyValid = true;
+  console.log();
 
-  // Check and refresh admin session
-  if (fs.existsSync(adminAuthFile)) {
-    console.log("🔑 Admin session:");
-    const adminValid = await refreshAuthIfNeeded(adminAuthFile, baseUrl);
-    if (adminValid) {
-      hasValidAuth = true;
-    } else {
-      console.log("⚠️  Admin session expired and could not be refreshed");
-      console.log("   Run: make auth-setup-all (or make auth-setup-admin)\n");
-      console.log("   Credentials: 1Password > Test Accounts\n");
-    }
-    console.log();
-  }
+  console.log("👤 User session:");
+  const userOk = await ensureSession("user", baseUrl, environment);
+  if (userOk) anyValid = true;
+  console.log();
 
-  // Check and refresh user session
-  if (fs.existsSync(userAuthFile)) {
-    console.log("👤 User session:");
-    const userValid = await refreshAuthIfNeeded(userAuthFile, baseUrl);
-    if (userValid) {
-      hasValidAuth = true;
-    } else {
-      console.log("⚠️  User session expired and could not be refreshed");
-      console.log("   Run: make auth-setup-user\n");
-    }
-    console.log();
-  }
-
-  // Warn if no valid auth sessions (but don't fail - some tests might not need auth)
-  if (
-    !hasValidAuth &&
-    (fs.existsSync(adminAuthFile) || fs.existsSync(userAuthFile))
-  ) {
-    console.log("⚠️  No valid authentication sessions available");
-    console.log("   Tests requiring authentication may fail");
-    console.log("   Run: make auth-setup-all\n");
-    console.log("   Credentials: 1Password > Test Accounts\n");
+  if (!anyValid) {
+    console.log("⚠️  No valid authentication sessions available.");
+    console.log("   Tests requiring authentication may fail.\n");
   }
 
   console.log("✅ Pre-flight checks complete\n");

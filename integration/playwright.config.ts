@@ -4,11 +4,41 @@
  */
 
 import { defineConfig } from "@playwright/test";
+import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Resolve the API base URL from:
+ *   1. BASE_API_URL env var (highest priority — use for VPN environments)
+ *   2. Environment config file (config/environments/<env>.json)
+ *   3. Fallback to localhost:4000
+ *
+ * Note: global-setup.ts validates reachability and exits early if VPN is
+ * required but BASE_API_URL is not set, so tests never run against a
+ * VPN_REQUIRED placeholder URL.
+ */
+function getApiBaseUrl(): string {
+  if (process.env.BASE_API_URL) return process.env.BASE_API_URL;
+
+  const env = process.env.E2E_ENVIRONMENT || "local";
+  try {
+    const configPath = path.join(
+      __dirname,
+      `../config/environments/${env}.json`,
+    );
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const url = config.baseUrls?.api;
+    if (url && url !== "VPN_REQUIRED") return url;
+  } catch {
+    // Config not found — fall through to default
+  }
+
+  return "http://localhost:4000";
+}
 
 // Resolve reporter path
 const jsonlReporterPath = path.resolve(
@@ -18,6 +48,9 @@ const jsonlReporterPath = path.resolve(
 
 export default defineConfig({
   testDir: "./tests",
+
+  // Fail fast: check API reachability + VPN before any tests run
+  globalSetup: path.resolve(__dirname, "./global-setup.ts"),
 
   // Run tests in files in parallel
   fullyParallel: true,
@@ -49,8 +82,8 @@ export default defineConfig({
 
   // Shared settings for all the projects below
   use: {
-    // Base URL for API requests
-    baseURL: process.env.BASE_API_URL || "http://localhost:4000",
+    // Base URL for API requests — resolved from env config or BASE_API_URL override
+    baseURL: getApiBaseUrl(),
 
     // Extra HTTP headers
     extraHTTPHeaders: {

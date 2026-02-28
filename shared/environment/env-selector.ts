@@ -41,7 +41,7 @@ export class EnvironmentSelector {
         throw new Error(
           `Environment configuration not found: ${env}\n` +
             `Expected file: ${configPath}\n` +
-            `Available environments: local, dev, sandbox, staging`,
+            `Available environments: local, dev, sandbox, staging, production`,
         );
       }
       throw new Error(
@@ -60,6 +60,7 @@ export class EnvironmentSelector {
       "dev",
       "sandbox",
       "staging",
+      "production",
     ];
 
     try {

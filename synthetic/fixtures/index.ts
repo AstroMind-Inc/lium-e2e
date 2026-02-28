@@ -7,7 +7,6 @@ import { test as base, Page } from "@playwright/test";
 import { envSelector } from "../../shared/environment/env-selector.js";
 import { credentialManager } from "../../shared/credentials/credential-manager.js";
 import { Auth0Helper } from "../../shared/auth/auth0-helper.js";
-import { setupAuthenticatedPage } from "../../shared/auth/token-injection.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import type {
@@ -97,11 +96,12 @@ export const test = base.extend<CustomFixtures>({
   // Creates a new context with admin storageState
   // Tests focus on functionality, not auth flow
   adminPage: async ({ browser }, use) => {
-    console.log("[Auth] Using saved admin session");
+    const sessionEnv = process.env.E2E_ENVIRONMENT || "local";
+    console.log(`[Auth] Using saved admin session (${sessionEnv})`);
 
     const adminAuthPath = path.resolve(
       __dirname,
-      "../../playwright/.auth/admin.json",
+      `../../playwright/.auth/admin-${sessionEnv}.json`,
     );
 
     // Create context with admin session
@@ -119,11 +119,12 @@ export const test = base.extend<CustomFixtures>({
   // Creates a new context with user storageState
   // Tests focus on functionality, not auth flow
   userPage: async ({ browser }, use) => {
-    console.log("[Auth] Using saved user session");
+    const sessionEnv = process.env.E2E_ENVIRONMENT || "local";
+    console.log(`[Auth] Using saved user session (${sessionEnv})`);
 
     const userAuthPath = path.resolve(
       __dirname,
-      "../../playwright/.auth/user.json",
+      `../../playwright/.auth/user-${sessionEnv}.json`,
     );
 
     // Create context with user session
@@ -140,31 +141,6 @@ export const test = base.extend<CustomFixtures>({
 
 export { expect } from "@playwright/test";
 
-// Global afterEach hook to FORCE screenshot attachment for ALL tests (even passing ones)
-// This ensures screenshots appear in HTML reports for all tests
-test.afterEach(async ({ page }, testInfo) => {
-  console.log(`[Screenshot Hook] Running for test: ${testInfo.title}`);
-
-  if (!page) {
-    console.log("[Screenshot Hook] No page object - skipping");
-    return;
-  }
-
-  try {
-    // Take screenshot
-    const screenshot = await page.screenshot({ fullPage: true });
-    console.log(
-      `[Screenshot Hook] Screenshot captured (${screenshot.length} bytes)`,
-    );
-
-    // Attach to test info
-    await testInfo.attach(`screenshot-${testInfo.status}`, {
-      body: screenshot,
-      contentType: "image/png",
-    });
-
-    console.log("[Screenshot Hook] Screenshot attached to test report");
-  } catch (error) {
-    console.log(`[Screenshot Hook] Error: ${(error as Error).message}`);
-  }
-});
+// Screenshots are captured automatically by playwright.config.ts (screenshot: "on").
+// Tests using adminPage/userPage create their own browser contexts — a hook using the
+// bare `page` fixture would capture a different, unauthenticated page. No hook needed.

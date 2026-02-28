@@ -142,8 +142,8 @@ export async function setupAuthenticatedPage(
 export async function hasValidAuthTokens(page: Page): Promise<boolean> {
   return await page.evaluate(() => {
     // Check for Auth0 SPA SDK storage
-    const auth0Keys = Object.keys(localStorage).filter(
-      (key) => key.includes("@@auth0spajs@@"),
+    const auth0Keys = Object.keys(localStorage).filter((key) =>
+      key.includes("@@auth0spajs@@"),
     );
 
     if (auth0Keys.length === 0) {

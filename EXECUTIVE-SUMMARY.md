@@ -14,6 +14,7 @@
 ## ⚡ Key Features
 
 ### 1. **Turn-Key Operation**
+
 ```bash
 make setup              # One-time setup (5 minutes)
 make auth-setup-all     # Authenticate once (admin + user)
@@ -21,12 +22,14 @@ make test-syn-all       # Run all browser tests → Report opens automatically
 ```
 
 **Credentials**: 1Password > Test Accounts
+
 - Admin: your @astromind.com account
 - User: `test-user@astromind.com`
 
 No Node.js knowledge required. Just `make` commands.
 
 ### 2. **Auto-Discovery**
+
 ```bash
 mkdir synthetic/tests/my-feature
 touch synthetic/tests/my-feature/test.spec.ts
@@ -39,7 +42,9 @@ make test                 # ✅ Shows in CLI menu
 **No config changes. No code updates. Just works.**
 
 ### 3. **Unified Authentication**
+
 One auth setup works for ALL test types:
+
 ```bash
 make auth-setup-all      # Authenticate once (admin + user)
 
@@ -55,7 +60,9 @@ make test-api-all        # API tests ✅ (reuses cookies)
 Integration tests extract auth cookies from saved browser sessions - no duplicate credential management!
 
 ### 4. **Smart Pre-Flight Checks**
+
 Before every test run:
+
 - 🏥 **Health check** - Fails fast if app/API is down
 - 🔍 **Token validation** - Auto-refreshes expired auth sessions
 - 🚀 **Tests run** - Only if checks pass
@@ -63,7 +70,9 @@ Before every test run:
 **No more mysterious failures from expired tokens or servers being down.**
 
 ### 5. **Auto-Opening Reports**
+
 Tests automatically open interactive HTML reports when complete:
+
 ```bash
 make test-syn-all   # Runs → Opens report with screenshots/videos
 make test-api-all   # Runs → Opens report instantly
@@ -73,11 +82,11 @@ No manual steps. Rich HTML results with screenshots, traces, and videos.
 
 ### 6. **Three Test Pillars**
 
-| Pillar | What It Tests | Example Command |
-|--------|--------------|-----------------|
-| **Synthetic** | Browser automation, user flows | `make test-syn-auth` |
-| **Integration** | API endpoints, contracts | `make test-api-health` |
-| **Performance** | Load, stress, throughput (k6) | `make test-perf-api-load` |
+| Pillar          | What It Tests                  | Example Command           |
+| --------------- | ------------------------------ | ------------------------- |
+| **Synthetic**   | Browser automation, user flows | `make test-syn-auth`      |
+| **Integration** | API endpoints, contracts       | `make test-api-health`    |
+| **Performance** | Load, stress, throughput (k6)  | `make test-perf-api-load` |
 
 All pillars use the same auto-discovery system.
 
@@ -86,31 +95,36 @@ All pillars use the same auto-discovery system.
 ## 📊 Current Coverage
 
 **Synthetic (Browser Tests):**
+
 - ✅ Authentication flows (OAuth2/Auth0)
 - ✅ Multi-tenant member lifecycle
 - ✅ Chat functionality
 - ✅ Admin access controls
 - ✅ Command palette (CMD-K)
+- ✅ File storage lifecycle (upload, preview, download, delete)
 - ✅ Basic health checks
 
 **Integration (API Tests):**
+
 - ✅ Health checks (`/healthz`)
 - ✅ Error handling
 - ⏭️ User endpoints (skipped - not implemented yet)
 
 **Performance (k6 Load Tests):**
+
 - ✅ API baseline performance
 - ✅ Spike testing (sudden traffic)
 - ✅ Stress testing (breaking points)
 - ✅ Custom metrics (error rate, latency, auth failures)
 
-**Results**: 80%+ internal framework test coverage, all integration tests passing
+**Results**: 73 synthetic tests passing across 6 browser projects, all integration tests passing
 
 ---
 
 ## 🚀 Getting Started (For New Developers)
 
 ### First Time Setup (5 minutes)
+
 ```bash
 cd lium-e2e
 make setup              # Install deps, k6, create directories
@@ -122,6 +136,7 @@ make auth-setup-all     # Authenticate both admin + user (saved forever)
 ```
 
 ### Run Tests
+
 ```bash
 # Interactive menu (recommended)
 make test               # Choose pillar → module → environment
@@ -135,6 +150,7 @@ make test-syn-auth      # Just auth tests
 ```
 
 ### Add New Tests
+
 ```bash
 # 1. Create folder
 mkdir synthetic/tests/my-feature
@@ -154,6 +170,7 @@ make test-syn-my-feature
 ```
 
 **Optional**: Add `manifest.yml` for custom icon/description:
+
 ```yaml
 name: My Feature
 description: Test my awesome feature
@@ -166,23 +183,27 @@ tags: [critical, new]
 ## 🏗️ Architecture Highlights
 
 ### Unified Authentication
+
 - Synthetic tests save browser session (`playwright/.auth/admin.json`)
 - Integration tests extract cookies from same session
 - One auth setup, all tests work
 - Tokens auto-refresh before each run
 
 ### Fail-Fast Design
+
 - Health check runs BEFORE tests
 - Exits immediately if server is down
 - Saves time, clearer error messages
 
 ### Auto-Discovery System
+
 - `ModuleScanner` finds test folders automatically
 - Makefile pattern rules (`test-syn-%`) work for any module
 - CLI menu updates automatically
 - Zero configuration overhead
 
 ### Reporter Strategy
+
 - **HTML reports**: Rich, interactive (screenshots, traces, videos)
 - **Auto-open**: Opens in browser after test runs
 - **JSONL tracking**: Infrastructure ready (future: historical data)
@@ -192,6 +213,7 @@ tags: [critical, new]
 ## 💡 Best Practices
 
 ### ✅ DO
+
 - Use auto-discovery (add folders, get commands)
 - Run `make auth-setup-all` once, reuse forever
 - Use credentials from 1Password > Test Accounts
@@ -200,6 +222,7 @@ tags: [critical, new]
 - Add `manifest.yml` for better test organization
 
 ### ❌ DON'T
+
 - Don't modify Makefile for new tests (auto-discovered)
 - Don't skip authentication setup (tests will fail)
 - Don't ignore pre-flight check warnings
@@ -211,14 +234,17 @@ tags: [critical, new]
 ## 📈 What's Next
 
 **Immediate (This Sprint):**
+
 - [ ] JSONL result tracking (infrastructure ready, needs integration)
 - [ ] Slack notifications for test results
 
 **Short-term (Next Sprint):**
+
 - [ ] CI/CD integration (GitHub Actions)
 - [ ] Expand performance test coverage
 
 **Future:**
+
 - [ ] Visual regression testing
 - [ ] Test data factories
 - [ ] Mobile device testing (BrowserStack)
@@ -232,7 +258,7 @@ See [ROADMAP.md](ROADMAP.md) for details.
 
 - **README.md** - Full documentation, all commands
 - **ROADMAP.md** - Planned features, task assignments
-- **synthetic/tests/_examples/** - Example test patterns
+- **synthetic/tests/\_examples/** - Example test patterns
 - **performance/tests/api-load/README.md** - k6 performance testing guide
 - **UI-DISCOVERY-METHODOLOGY.md** - How to find UI selectors
 
@@ -262,18 +288,21 @@ See [ROADMAP.md](ROADMAP.md) for details.
 ## 🎯 Success Metrics
 
 **Developer Experience:**
+
 - ⚡ Setup time: ~5 minutes (first time)
 - ⚡ Auth setup: One-time (reused forever)
 - ⚡ Add new test: ~30 seconds (create folder + file)
 - ⚡ Run tests: 1 command (`make test-syn-all`)
 
 **Test Coverage:**
-- 🌐 10+ synthetic test modules
+
+- 🌐 73 synthetic tests across 6 browser projects
 - 🔗 Health + error handling (integration)
 - ⚡ 3 performance test scenarios
 - 📊 All tests passing
 
 **Reliability:**
+
 - ✅ Pre-flight checks catch 90%+ of setup issues
 - ✅ Auto-refresh tokens (no expired session failures)
 - ✅ Fail-fast health checks (save time)
@@ -284,6 +313,7 @@ See [ROADMAP.md](ROADMAP.md) for details.
 ## 🚀 Bottom Line
 
 **This framework makes E2E testing effortless:**
+
 - ✅ No configuration overhead
 - ✅ No credential duplication
 - ✅ No manual steps
@@ -294,5 +324,5 @@ See [ROADMAP.md](ROADMAP.md) for details.
 ---
 
 **Maintained by**: Engineering Team
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-02-28
 **Status**: ✅ Production Ready (v1.0)
